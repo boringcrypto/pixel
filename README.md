@@ -1,4 +1,4 @@
-# The Pixel
+# Pixel Inc
 An experiment in collaborative 'art'? And a tribute to 90s web design.
 
 # Process
