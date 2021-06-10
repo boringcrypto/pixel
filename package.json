@@ -1,0 +1,21 @@
+{
+    "name": "pixel",
+    "version": "1.0.0",
+    "main": "index.js",
+    "repository": "https://github.com/boringcrypto/pixel.git",
+    "author": "BoringCrypto <b@rtje.net>",
+    "license": "MIT",
+    "scripts": {
+        "test": "hardhat test",
+        "format": "prettier --write contracts/**/*.sol *.js *.json test/**/*.js",
+        "pretty-quick": "pretty-quick",
+        "coverage": "hardhat coverage",
+        "flat": "hardhat flat .\\contracts\\Pixel.sol --output .\\contracts\\PixelFlat.sol",
+        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/PixelFlat.sol/Pixel.json\""
+    },
+    "devDependencies": {
+        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity",
+        "@boringcrypto/hardhat-framework": "boringcrypto/hardhat-framework"
+    },
+    "dependencies": {}
+}
