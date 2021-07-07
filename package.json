@@ -11,11 +11,26 @@
         "pretty-quick": "pretty-quick",
         "coverage": "hardhat coverage",
         "flat": "hardhat flat .\\contracts\\Pixel.sol --output .\\contracts\\PixelFlat.sol",
-        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/PixelFlat.sol/Pixel.json\""
+        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/PixelFlat.sol/Pixel.json\"",
+        "dev": "vite",
+        "build": "vue-tsc --noEmit && vite build",
+        "serve": "vite preview"
+    },
+    "dependencies": {
+        "bootstrap": "^5.0.0-beta3",
+        "ethers": "^5.1.4",
+        "vue": "^3.0.5",
+        "vue-router": "4"
     },
     "devDependencies": {
         "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity",
-        "@boringcrypto/hardhat-framework": "boringcrypto/hardhat-framework"
-    },
-    "dependencies": {}
+        "@boringcrypto/hardhat-framework": "boringcrypto/hardhat-framework",
+        "@types/node": "^15.0.2",
+        "@vitejs/plugin-vue": "^1.2.2",
+        "@vue/compiler-sfc": "^3.0.5",
+        "sass": "^1.32.12",
+        "typescript": "^4.1.3",
+        "vite": "^2.2.3",
+        "vue-tsc": "^0.0.24"
+    }
 }

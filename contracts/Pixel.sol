@@ -22,7 +22,12 @@ interface ERC721TokenReceiver {
     /// @param _data Additional data with no specified format
     /// @return `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
     ///  unless throwing
-    function onERC721Received(address _operator, address _from, uint256 _tokenId, bytes calldata _data) external returns(bytes4);
+    function onERC721Received(
+        address _operator,
+        address _from,
+        uint256 _tokenId,
+        bytes calldata _data
+    ) external returns (bytes4);
 }
 
 contract Canvas {
@@ -47,7 +52,7 @@ contract Canvas {
     }
 
     function supportsInterface(bytes4 interfaceID) external view returns (bool) {
-        return 
+        return
             interfaceID == this.supportsInterface.selector || // EIP-165
             interfaceID == 0x80ac58cd; // EIP-721
     }
@@ -62,13 +67,17 @@ contract Canvas {
         return _owner == holder ? 1 : 0;
     }
 
-    function ownerOf(uint256 _tokenId) public view returns (address){
+    function ownerOf(uint256 _tokenId) public view returns (address) {
         require(_tokenId == 0, "Invalid token ID");
         require(holder != address(0), "No owner");
         return holder;
     }
 
-    function _transfer(address from, address to, uint256 _tokenId) internal {
+    function _transfer(
+        address from,
+        address to,
+        uint256 _tokenId
+    ) internal {
         require(_tokenId == 0, "Invalid token ID");
         require(from == holder, "From not owner");
         require(from == msg.sender || from == allowed || operators[holder][from], "Transfer not allowed");
@@ -85,18 +94,35 @@ contract Canvas {
         return size > 0;
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId, bytes calldata _data) public payable {
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId,
+        bytes calldata _data
+    ) public payable {
         _transfer(_from, _to, _tokenId);
         if (isContract(_to)) {
-            require(ERC721TokenReceiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data) == bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")), "Wrong return value");
+            require(
+                ERC721TokenReceiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data) ==
+                    bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")),
+                "Wrong return value"
+            );
         }
     }
 
-    function safeTransferFrom(address _from, address _to, uint256 _tokenId) public payable {
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) public payable {
         safeTransferFrom(_from, _to, _tokenId, "");
     }
 
-    function transferFrom(address _from, address _to, uint256 _tokenId) public payable {
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) public payable {
         _transfer(_from, _to, _tokenId);
     }
 
@@ -152,12 +178,12 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     }
 
     struct Block {
-        address owner;          // current owner of the block
-        uint256 lastPrice;      // last sale price - 0 = never sold
-        string url;             // url for this block (should be < 256 characters)
-        string description;     // description for this block (should be < 256 characters)
-        uint32 lastSold;        // blocktime the block was last sold - 0 = never sold
-        PixelData[100] pixels;  // red, green, blue values for all 100 pixels
+        address owner; // current owner of the block
+        uint256 lastPrice; // last sale price - 0 = never sold
+        string url; // url for this block (should be < 256 characters)
+        string description; // description for this block (should be < 256 characters)
+        uint32 lastSold; // blocktime the block was last sold - 0 = never sold
+        PixelData[100] pixels; // red, green, blue values for all 100 pixels
     }
 
     // data is organized in blocks of 10x10. There are 100x100 blocks. Base is 0 and counting goes left to right, then top to bottom.
@@ -196,10 +222,15 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         }
     }
 
-    function setBlocks(uint256[] calldata blockNumbers, string calldata url, string calldata description, PixelData[100][] calldata pixels) public payable notLocked() {
+    function setBlocks(
+        uint256[] calldata blockNumbers,
+        string calldata url,
+        string calldata description,
+        PixelData[100][] calldata pixels
+    ) public payable notLocked() {
         require(bytes(url).length < 256, "URL too long");
         require(bytes(description).length < 256, "Description too long");
-        
+
         // This error may happen when you calculate the correct cost, but someone buys one of your blocks before your transaction goes through
         // This is tested first to reduce wasted gas in case of failure
         uint256 cost = getCost(blockNumbers);
@@ -207,7 +238,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         uint256 refund = cost.sub(msg.value);
         if (refund > 0) {
             // Refund excess payment and ensure success
-            (bool success,) = msg.sender.call{value: refund}("");
+            (bool success, ) = msg.sender.call{value: refund}("");
             require(success, "Pixel: refund failed");
         }
 
