@@ -7,7 +7,7 @@
     "license": "MIT",
     "scripts": {
         "test": "hardhat test",
-        "format": "prettier --write contracts/**/*.sol **/*.js **/*.json **/*.vue",
+        "format": "prettier --write contracts/**/*.sol *.js *.ts *.json test/**/*.js src/**/*.ts src/**/*.js src/**/*.json **/*.vue",
         "pretty-quick": "pretty-quick",
         "coverage": "hardhat coverage",
         "flat": "hardhat flat .\\contracts\\Pixel.sol --output .\\contracts\\PixelFlat.sol",
