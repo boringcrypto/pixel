@@ -7,11 +7,11 @@
     "license": "MIT",
     "scripts": {
         "test": "hardhat test",
-        "format": "prettier --write contracts/**/*.sol *.js *.json test/**/*.js",
+        "format": "prettier --write contracts/**/*.sol *.js *.json test/**/*.js **/*.vue",
         "pretty-quick": "pretty-quick",
         "coverage": "hardhat coverage",
         "flat": "hardhat flat .\\contracts\\Pixel.sol --output .\\contracts\\PixelFlat.sol",
-        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/PixelFlat.sol/Pixel.json\"",
+        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/Pixel.sol/Pixel.json\"",
         "dev": "vite",
         "build": "vue-tsc --noEmit && vite build",
         "serve": "vite preview"
@@ -23,6 +23,7 @@
         "vue-router": "4"
     },
     "devDependencies": {
+        "98.css": "^0.1.17",
         "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity",
         "@boringcrypto/hardhat-framework": "boringcrypto/hardhat-framework",
         "@types/node": "^15.0.2",

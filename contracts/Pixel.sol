@@ -9,6 +9,9 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
 
+// solhint-disable avoid-low-level-calls
+// solhint-disable
+
 interface ERC721TokenReceiver {
     /// @notice Handle the receipt of an NFT
     /// @dev The ERC721 smart contract calls this function on the recipient
@@ -46,12 +49,14 @@ contract Canvas {
     uint256 public price;
     IERC20 public pixel;
 
+    mapping(address => mapping(address => bool)) public operators;
+
     constructor(IERC20 _pixel) public {
         pixel = _pixel;
         price = _pixel.totalSupply() / 10;
     }
 
-    function supportsInterface(bytes4 interfaceID) external view returns (bool) {
+    function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
         return
             interfaceID == this.supportsInterface.selector || // EIP-165
             interfaceID == 0x80ac58cd; // EIP-721
@@ -97,8 +102,16 @@ contract Canvas {
     function safeTransferFrom(
         address _from,
         address _to,
+        uint256 _tokenId
+    ) public payable {
+        safeTransferFrom(_from, _to, _tokenId, "");
+    }
+
+    function safeTransferFrom(
+        address _from,
+        address _to,
         uint256 _tokenId,
-        bytes calldata _data
+        bytes memory _data
     ) public payable {
         _transfer(_from, _to, _tokenId);
         if (isContract(_to)) {
@@ -108,14 +121,6 @@ contract Canvas {
                 "Wrong return value"
             );
         }
-    }
-
-    function safeTransferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId
-    ) public payable {
-        safeTransferFrom(_from, _to, _tokenId, "");
     }
 
     function transferFrom(
@@ -130,8 +135,6 @@ contract Canvas {
         require(_tokenId == 0, "Invalid token ID");
         allowed = _approved;
     }
-
-    mapping(address => mapping(address => bool)) public operators;
 
     function setApprovalForAll(address _operator, bool _approved) public {
         operators[msg.sender][_operator] = _approved;
@@ -152,8 +155,12 @@ contract Canvas {
 
     function buy() external payable {
         require(msg.value == price, "Value != price");
-        holder.call{value: price.mul(110) / 150, gas: 20000}("");
-        (bool success, ) = address(pixel).call{value: price.mul(40) / 150, gas: 20000}("");
+
+        // Send original price paid + 10% back to the holder with max 20.000 gas. If this fails, continue anyway to prevent grieving/blocking attacks.
+        (bool success, ) = holder.call{value: price.mul(110) / 150, gas: 20000}("");
+
+        // Send the remaining funds to the PIXEL token holders.
+        (success, ) = address(pixel).call{value: price.mul(40) / 150, gas: 20000}("");
         require(success, "Funding pixel pool failed");
         holder = msg.sender;
         allowed = address(0);
@@ -169,13 +176,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     uint8 public constant decimals = 18;
     address public canvas;
 
-    uint256 private constant START_BLOCK_PRICE = 1e18; // Price starts at 1 MATIC/pixel = 10 MATIC/block
-
-    struct PixelData {
-        uint8 red;
-        uint8 green;
-        uint8 blue;
-    }
+    uint256 private constant START_BLOCK_PRICE = 1e18; // Price starts at 1 MATIC/pixel = 100 MATIC/block
 
     struct Block {
         address owner; // current owner of the block
@@ -183,11 +184,11 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         string url; // url for this block (should be < 256 characters)
         string description; // description for this block (should be < 256 characters)
         uint32 lastSold; // blocktime the block was last sold - 0 = never sold
-        PixelData[100] pixels; // red, green, blue values for all 100 pixels
+        string pixels; // pixels as dataURI
     }
 
     // data is organized in blocks of 10x10. There are 100x100 blocks. Base is 0 and counting goes left to right, then top to bottom.
-    Block[10000] public data;
+    Block[10000] public blk;
     uint256 public immutable lockTimestamp;
 
     constructor() public {
@@ -197,8 +198,9 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     function mintCanvas() external {
         // The canvas is final
         require(block.timestamp >= lockTimestamp);
-        // Send any funds left to the owner
-        owner.call{value: address(this).balance}("");
+        // Send any funds left to the owner. If this fails, continue anyway to prevent blocking.
+        bool success;
+        (success, ) = owner.call{value: address(this).balance}("");
         // Create Canvas
         canvas = address(new Canvas(this));
     }
@@ -211,14 +213,14 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     function getBlocks(uint256[] calldata blockNumbers) public view returns (Block[] memory blocks) {
         blocks = new Block[](blockNumbers.length);
         for (uint256 i = 0; i < blockNumbers.length; i++) {
-            blocks[i] = data[blockNumbers[i]];
+            blocks[i] = blk[blockNumbers[i]];
         }
     }
 
     // The first time the UI should download the entire data, but by storing this locally, it can use the lastSolds array to get the updated blocks
     function getlastSolds() public view returns (uint32[10000] memory lastSolds) {
         for (uint256 i = 0; i < 10000; i++) {
-            lastSolds[i] = data[i].lastSold;
+            lastSolds[i] = blk[i].lastSold;
         }
     }
 
@@ -226,7 +228,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         uint256[] calldata blockNumbers,
         string calldata url,
         string calldata description,
-        PixelData[100][] calldata pixels
+        string[] calldata pixels
     ) public payable notLocked() {
         require(bytes(url).length < 256, "URL too long");
         require(bytes(description).length < 256, "Description too long");
@@ -243,17 +245,19 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         }
 
         for (uint256 i = 0; i < blockNumbers.length; i++) {
+            uint256 blockNumber = blockNumbers[i];
             // Forward a maximum of 20000 gas to the previous owner for accepting the refund to avoid griefing attacks
-            data[blockNumbers[i]].owner.call{value: data[blockNumbers[i]].lastPrice, gas: 20000}("");
+            bool success;
+            (success, ) = blk[blockNumber].owner.call{value: blk[blockNumber].lastPrice, gas: 20000}("");
 
             Block memory newBlock;
             newBlock.owner = msg.sender;
-            newBlock.lastPrice = getCost(blockNumbers[i]);
+            newBlock.lastPrice = getCost(blockNumber);
             newBlock.url = url;
             newBlock.description = description;
             newBlock.lastSold = block.timestamp.to32();
             newBlock.pixels = pixels[i];
-            data[blockNumbers[i]] = newBlock;
+            blk[blockNumber] = newBlock;
         }
 
         // Mint a PIXEL token for each pixel bought
@@ -261,7 +265,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     }
 
     function getCost(uint256 blockNumber) public view returns (uint256 cost) {
-        uint256 last = data[blockNumber].lastPrice;
+        uint256 last = blk[blockNumber].lastPrice;
         cost = last == 0 ? START_BLOCK_PRICE : last.mul(2);
     }
 
@@ -273,13 +277,15 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
 
     function withdraw(IERC20 token) public onlyOwner {
         if (token != IERC20(0)) {
+            // Withdraw any accidental token deposits
             token.safeTransfer(owner, token.balanceOf(address(this)));
         } else if (block.timestamp < lockTimestamp) {
             // After canvas is created, funds go to PIXEL holders and can't be withdrawn by the owner
-            owner.call{value: address(this).balance}("");
+            bool success;
+            (success, ) = owner.call{value: address(this).balance}("");
         }
     }
 
     // Receive funds from NFT sales for all PIXEL holders
-    fallback() external payable {}
+    receive() external payable {}
 }
