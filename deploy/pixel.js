@@ -8,6 +8,8 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         args: [],
         log: true,
     })
+
+    
 }
 
 module.exports.tags = ["Pixel"]
