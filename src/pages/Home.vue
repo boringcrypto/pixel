@@ -243,7 +243,8 @@ export default defineComponent({
         }
     },
     async created() {
-        this.pixel = PixelDeployment.address
+        //this.pixel = PixelDeployment.address
+        this.pixel = "0x81DB9C598b3ebbdC92426422fc0A1d06E77195ec"
         setInterval(() => this.now = Date.now(), 1000);
 
         let dataStr = localStorage.getItem("data")
@@ -327,11 +328,13 @@ export default defineComponent({
                 console.log(this.info.address)
                 const signer = window.provider?.getSigner(this.info.address)
                 let p = PixelFactory.connect(this.pixel, signer)
-                this.pixelBalance = await p.balanceOf(this.info.address)
-                this.pixelTotalSupply = await p.totalSupply()
 
                 if (!this.lockTimeStamp) {
+                    this.pixelBalance = await p.balanceOf(this.info.address)
+                    this.pixelTotalSupply = await p.totalSupply()
                     this.lockTimeStamp = (await p.lockTimestamp()).toNumber()
+                    console.log(this.pixelBalance, this.pixelTotalSupply, this.lockTimeStamp)
+                    console.log(await p["getCost(uint256[])"]([1,2, 3]))
                 }
 
                 let currentUpdatesCount = await p.updatesCount()
@@ -480,7 +483,6 @@ export default defineComponent({
                     self.duplicateBlocks = 0
                     for (let x = 0; x < self.blockWidth; x++) {
                         for (let y = 0; y < self.blockHeight; y++) {
-                            self.pixel = PixelDeployment.address
                             let data = ctx.getImageData(x * 10, y * 10, 10, 10).data.filter((e, i) => i % 4 < 3)
                             let hex = "0x" + [...data].map(x => x.toString(16).padStart(2, '0')).join('');
                             let blockNumber = (self.startSelectY + y) * 100 + self.startSelectX + x;
