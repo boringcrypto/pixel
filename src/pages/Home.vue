@@ -1,8 +1,7 @@
 <template>
-    <a href="http://example.com">Example</a>
     <table style="width: 1000px; margin: auto;">
         <tr>
-            <td style="text-align: left"><img alt="Pixel Inc Logo" src="../assets/pixelInc.png" height="100" /></td>
+            <td style="text-align: left"><img alt="Pixel Inc Logo" src="../assets/pixelIncLogo.gif" height="100" /></td>
             <td>
                 Ends in: {{ lockDiffDays }} days {{ lockDiffHours }}:{{ lockDiffMinutes }}:{{ lockDiffSeconds }}<br>
                 Address: {{ info.address }}<br>
@@ -15,21 +14,30 @@
                 {{ pixelBalance.print(18, 2) }} PIXELs of {{ pixelTotalSupply.print(18, 2) }}<br>
             </td>
         </tr>
+        <tr>
+            <td colspan="2">
+                <button v-if="!locked" @click="buying = true" style="font-size: 14pt; height: 32px; width: 250px;">Upload your own pixels</button>
+            </td>
+        </tr>
     </table>
 
-    <div id="selectionArea" style="position: relative; width: 1000px; height: 1000px; background-color: white; margin-left: auto; margin-right: auto">
+    <div id="selectionArea" :style="'position: relative; width: 1000px; height: 1000px; background-color: white; margin-left: auto; margin-right: auto;' + (tooltip ? 'cursor: pointer' : '')">
         <canvas id="canvas" width="1000" height="1000" />
-        <div v-if="tooltip" ref="tooltip" :style="tooltipStyle">
-            <span v-if="tooltipBlock?.owner">
-                {{ tooltipBlock?.description }}<br>
-                {{ tooltipBlock?.url }}
-            </span>
-            <span v-else>
-                Unowned
-            </span>
-            <br>
-            Price is {{ (tooltipBlock?.lastPrice || 0) * 2 || 1 }} MATIC per pixel
-        </div>
+        <div class="window" v-if="tooltip" ref="tooltip" :style="tooltipStyle">
+            <div class="window-body">
+                <span v-if="tooltipBlock?.owner">
+                    {{ tooltipBlock?.description }}<br>
+                    <a>{{ tooltipBlock?.url }}</a>
+                </span>
+                <span v-else>
+                    Unowned
+                </span>
+            </div>
+            <div class="status-bar">
+                <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 2 || 0.0001 }} MATIC per pixel</p>
+                <p class="status-bar-field">{{ tooltipBlock?.owner ? "Owned" : "Unowned" }}</p>
+            </div>
+        </div>        
         <img ref="preview" :style="selectionStyle" />
         <div v-if="buying && !image" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%)">
             <div class="title-bar">
@@ -90,7 +98,6 @@
     <table style="width: 1000px; margin: auto;">
         <tr>
             <td style="text-align: left">
-                <button v-if="!locked" @click="buying = true">Draw PIXELs</button>
                 <button>The PIXEL token</button>
                 <button>The CANVAS NFT</button>
             </td>
@@ -301,7 +308,7 @@ export default defineComponent({
         tooltip(): boolean { return this.mx != -1 && !this.buying },
         tooltipBlock(): Block | null { return this.tooltip && this.blocks.length == 10000 ? this.blocks[Math.floor(this.my / 10) * 100 + Math.floor(this.mx / 10)] : null},
         tooltipStyle(): string {
-            let style = "position: absolute; pointer-events: none; margin: 5px; padding: 5px; background-color: grey;"
+            let style = "position: absolute; pointer-events: none; margin: 5px; min-width: 200px;"
             style += "left: " + this.mx + "px;"
             style += "top: " + this.my + "px;"
             return style
@@ -407,7 +414,7 @@ export default defineComponent({
                     let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
                     let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
                     let cost = await p["getCost(uint256[])"](blockNumbers)
-                    p["setBlocks(uint256[],string,string,bytes[])"](blockNumbers, this.url, this.description, pixels, { value: cost, gasPrice: 0 })
+                    p["setBlocks(uint256[],string,string,bytes[])"](blockNumbers, this.url, this.description, pixels, { value: cost, gasPrice: 1000000000 })
                 }
             }
         },
