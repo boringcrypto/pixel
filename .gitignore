@@ -355,5 +355,4 @@ node_modules
 cache
 artifacts
 deployments
-dist
 types

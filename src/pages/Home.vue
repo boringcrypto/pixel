@@ -1,4 +1,5 @@
 <template>
+    <a href="http://example.com">Example</a>
     <table style="width: 1000px; margin: auto;">
         <tr>
             <td style="text-align: left"><img alt="Pixel Inc Logo" src="../assets/pixelInc.png" height="100" /></td>
