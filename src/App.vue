@@ -3,9 +3,7 @@
 </style>
 
 <template>
-    <div class="text-center">
-        <img alt="Pixel Inc Logo" src="./assets/logo.jpeg" height="180" />
-
+    <div style="text-align: center;">
         <Web3 :info="info">
             <template v-slot:none>No web3 provider was found. Please use MetaMask.</template>
             <template v-slot:connect>

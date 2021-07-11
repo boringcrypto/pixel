@@ -48,6 +48,7 @@ contract Canvas {
 
     uint256 public price;
     IERC20 public pixel;
+    string public info;
 
     mapping(address => mapping(address => bool)) public operators;
 
@@ -165,6 +166,11 @@ contract Canvas {
         holder = msg.sender;
         allowed = address(0);
     }
+
+    function setInfo(string memory info_) external {
+        require(msg.sender == holder, "Canvas: not holder");
+        info = info_;
+    }
 }
 
 contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
@@ -176,7 +182,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     uint8 public constant decimals = 18;
     address public canvas;
 
-    uint256 private constant START_BLOCK_PRICE = 1e16; // Price starts at 1 MATIC/pixel = 100 MATIC/block
+    uint256 private constant START_BLOCK_PRICE = 1e14; // Price starts at 1 MATIC/pixel = 100 MATIC/block
 
     struct BlockLink {
         string url; // url for this block (should be < 256 characters)
@@ -186,7 +192,6 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     struct Block {
         address owner; // current owner of the block
         uint128 lastPrice; // last sale price - 0 = never sold
-        uint32 lastSold; // blocktime the block was last sold - 0 = never sold
         uint32 link; // The BlockLink for this block
         bytes pixels; // pixels as bytes
     }
@@ -195,7 +200,6 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         uint32 number;
         address owner; // current owner of the block
         uint128 lastPrice; // last sale price - 0 = never sold
-        uint32 lastSold; // blocktime the block was last sold - 0 = never sold
         string url; // url for this block (should be < 256 characters)
         string description; // description for this block (should be < 256 characters)
         bytes pixels; // pixels as bytes
@@ -209,6 +213,8 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
 
     constructor() public {
         lockTimestamp = block.timestamp + 2 weeks;
+
+        // Set link[0] to blank
         link.push(BlockLink({
             url: "",
             description: ""
@@ -238,17 +244,9 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
             blocks[i].number = blockNumbers[i].to32();
             blocks[i].owner = _blk.owner;
             blocks[i].lastPrice = _blk.lastPrice;
-            blocks[i].lastSold = _blk.lastSold;
             blocks[i].url = _link.url;
             blocks[i].description = _link.description;
             blocks[i].pixels = _blk.pixels;
-        }
-    }
-
-    // The first time the UI should download the entire data, but by storing this locally, it can use the lastSolds array to get the updated blocks
-    function getlastSolds() public view returns (uint32[10000] memory lastSolds) {
-        for (uint256 i = 0; i < 10000; i++) {
-            lastSolds[i] = blk[i].lastSold;
         }
     }
 
@@ -256,10 +254,14 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         return updates.length;
     }
 
-    function getUpdates(uint256 since) public view returns (uint256[] memory updatesSince) {
-        updatesSince = new uint256[](updates.length - since);
-        for (uint256 i = since; i < updates.length; i++) {
-            updatesSince[i - since] = updates[i];
+    function getUpdates(uint256 since, uint256 max) public view returns (uint256[] memory updatesSince) {
+        uint256 length = updates.length - since;
+        if (length > max) { 
+            length = max; 
+        }
+        updatesSince = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            updatesSince[i] = updates[since + i];
         }
     }
 
@@ -289,7 +291,6 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
             newBlock.owner = msg.sender;
             newBlock.lastPrice = getCost(blockNumber).to128();
             newBlock.link = linkNumber;
-            newBlock.lastSold = block.timestamp.to32();
             newBlock.pixels = pixels[i];
             blk[blockNumber] = newBlock;
 

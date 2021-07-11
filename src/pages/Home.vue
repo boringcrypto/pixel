@@ -1,55 +1,199 @@
 <template>
-    Balance: {{ pixelBalance.toString() }}<br>
+    <table style="width: 1000px; margin: auto;">
+        <tr>
+            <td style="text-align: left"><img alt="Pixel Inc Logo" src="../assets/pixelInc.png" height="100" /></td>
+            <td>
+                Ends in: {{ lockDiffDays }} days {{ lockDiffHours }}:{{ lockDiffMinutes }}:{{ lockDiffSeconds }}<br>
+                Address: {{ info.address }}<br>
+                <span v-if="info.chainId == 0">
+                    Network not connected
+                </span>
+                <span v-else-if="!wrongNetwork">
+                    Network Polygon
+                </span>
+                <span v-else>
+                    Wrong network
+                </span>
+                <br>
+                {{ pixelBalance.print(18, 2) }} PIXELs of {{ pixelTotalSupply.print(18, 2) }}<br>
+            </td>
+        </tr>
+    </table>
 
-    <div id="selectionArea" style="position: relative; width: 1000px; height: 1000px; background-color: white">
+    <div id="selectionArea" style="position: relative; width: 1000px; height: 1000px; background-color: white; margin-left: auto; margin-right: auto">
         <canvas id="canvas" width="1000" height="1000" />
+        <div v-if="tooltip" ref="tooltip" :style="tooltipStyle">
+            <span v-if="tooltipBlock?.owner">
+                {{ tooltipBlock?.description }}<br>
+                {{ tooltipBlock?.url }}
+            </span>
+            <span v-else>
+                Unowned
+            </span>
+            <br>
+            Price is {{ (tooltipBlock?.lastPrice || 0) * 2 || 1 }} MATIC per pixel
+        </div>
         <img ref="preview" :style="selectionStyle" />
-    </div>
-    
-    <div v-if="!image">
-        <h3>Step 1. Upload an image</h3>
-        <input type="file" id="imageLoader" name="imageLoader" />
-    </div>
-    <div v-if="image && !selected">
-        <h3>Step 2. Select the area you'd like</h3>
-        <p>Use your mouse to click and drag the area where you would like the image to go</p>
-    </div>
-    <div v-if="image && selected">
-        <h3>Step 3. Purchase</h3>
-        <p>
-            Size: {{ blockWidth * 10 }}x{{ blockHeight * 10 }}<br>
-            Cost: {{ cost }} MATIC<br>
-            You will receive {{ blockWidth * blockHeight * 100 }} PIXEL tokens
-        </p>
-        <button @click="buy">Purchase</button>
+        <div v-if="buying && !image" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%)">
+            <div class="title-bar">
+                <div class="title-bar-text">Claim your piece of the canvas, get some PIXELs</div>
+                <div class="title-bar-controls">
+                    <button aria-label="Close" @click="buying = false"></button>
+                </div>
+            </div>
+            <div class="window-body">
+                <h4>Step 1. Upload an image</h4>
+                <p>Select the image you would like to draw onto the canvas. For the best results, prepare an image at the correct size. 10x10, 20x20, 30x60, etc.</p>
+                <input type="file" @input="imageLoad" />
+            </div>
+        </div>
+
+        <div v-if="image && !selected" class="window" :style="'position: absolute; ' + (mouseBelowHalf ? 'top' : 'bottom') + ': 10%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%)'">
+            <div class="title-bar">
+                <div class="title-bar-text">Claim your piece of the canvas, get some PIXELs</div>
+                <div class="title-bar-controls">
+                    <button aria-label="Close" @click="buying = false"></button>
+                </div>
+            </div>
+            <div class="window-body">
+                <h4>Step 2. Select the area you like</h4>
+                <p>Use your mouse to click and drag the area where you would like the image to go.</p>
+            </div>
+        </div>
+
+        <div v-if="image && selected" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%)">
+            <div class="title-bar">
+                <div class="title-bar-text">Claim your piece of the canvas, get some PIXELs</div>
+                <div class="title-bar-controls">
+                    <button aria-label="Close" @click="image = null; buying = false; selected = false"></button>
+                </div>
+            </div>
+            <div class="window-body">
+                <h4>Step 3. Purchase</h4>
+                <p>
+                    Size: {{ blockWidth * 10 }}x{{ blockHeight * 10 }} pixels<br>
+                    Cost: {{ cost }} MATIC<br>
+                    You will receive {{ (blockWidth * blockHeight - duplicateBlocks) * 100 }} PIXEL tokens
+                    <span v-if="duplicateBlocks"><br>{{ duplicateBlocks * 100 }} duplicate pixels found, ignored</span>
+                </p>
+                <div class="field-row-stacked" style="width: 100%">
+                    <label for="url">URL</label>
+                    <input id="url" type="url" v-model="url">
+                </div>
+                <div class="field-row-stacked" style="width: 100%">
+                    <label for="description">Description</label>
+                    <input id="description" type="text" v-model="description">
+                </div>
+                <br>
+                <button @click="buy">Purchase</button>
+            </div>
+        </div>        
     </div>
 
-    <!-- hitwebcounter Code START -->
-    <a href="https://www.hitwebcounter.com" target="_blank">
-        <img
-            src="https://hitwebcounter.com/counter/counter.php?page=7835616&style=0004&nbdigits=6&type=page&initCount=0"
-            title="Free Counter"
-            Alt="web counter"
-            border="0"
-        />
-    </a>
+    <table style="width: 1000px; margin: auto;">
+        <tr>
+            <td style="text-align: left">
+                <button v-if="!locked" @click="buying = true">Draw PIXELs</button>
+                <button>The PIXEL token</button>
+                <button>The CANVAS NFT</button>
+            </td>
+            <td style="text-align: left">
+                
+            </td>
+            <td></td>
+        </tr>
+    </table>
+    
+    <img src="../assets/catsheepnow.gif" height="80">
+
+    <!-- Start of WebFreeCounter Code -->
+    <a href="https://www.webfreecounter.com/" target="_blank"><img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter"></a>
+    <!-- End of WebFreeCounter Code -->    
+    <hr>
+    <img src="../assets/underconstruction.gif">
+
 </template>
 
 <script lang="ts">
 import {defineComponent, PropType} from "@vue/runtime-core"
 import {ProviderInfo} from "../components/Web3.vue"
 import * as PixelDeployment from "../../deployments/localhost/Pixel.json"
+import * as Cache from "../cache.json"
 import {PixelFactory} from "../../types/ethers-contracts"
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber"
-import { utils } from "ethers"
+import { BigNumber } from "@ethersproject/bignumber"
+import { nextTick } from "process"
+import Decimal from "decimal.js-light"
+
+declare module "decimal.js-light" {
+    interface Decimal {
+        toInt(decimals: number): BigNumber
+    }
+}
+
+declare module "@ethersproject/bignumber" {
+    interface BigNumber {
+        toDec(divisor: number): Decimal
+        print(divisor: number, decimals: number): string
+    }
+}
+
+declare class CompressionStream {
+    constructor(encoding: string)
+    writable: any
+    readable: any
+}
+
+declare class DecompressionStream {
+    constructor(encoding: string)
+    writable: any
+    readable: any
+}
+
+Decimal.config({ precision: 36 })
+Decimal.config({ toExpNeg: -1000 })
+Decimal.config({ toExpPos: 1000 })
+Decimal.prototype.toInt = function (decimals: number) {
+    return BigNumber.from(this.times(new Decimal("10").pow(decimals)).todp(0).toString())
+}
+
+BigNumber.prototype.toDec = function (divisor: number) {
+    return new Decimal(this.toString()).dividedBy(new Decimal("10").toPower(divisor));
+}
+
+// Returns a string where the value is divided by 10^divisor and cut off to decimalPlaces decimal places
+// Pass in sep to change the decimal point. No rounding done at the moment.
+BigNumber.prototype.print = function (divisor, decimals) {
+    let powDivisor = new Decimal(10).toPower(divisor);
+    //Scale the number down by divisor
+    let x = new Decimal(this.toString());
+    x = x.dividedBy(powDivisor);
+    if (x.decimalPlaces() - x.precision(0) > decimals - 4) {
+        return x.toSignificantDigits(4).toFixed();
+    }
+    else {
+        return x.toFixed(decimals);
+    }
+}
 
 type Block = {
     owner: string,
-    lastPrice: BigNumberish,
-    lastSold: number,
+    lastPrice: number,
     url: string,
     description: string,
     pixels: string
+}
+
+function cleanURI(uri: string) {
+    let a = document.createElement("A") as HTMLAnchorElement
+    if (!uri.startsWith("http:") && !uri.startsWith("https:")) {
+        uri = "http://" + uri
+    }
+    a.href = uri
+    console.log("Protocol", a.protocol)
+    if (a.protocol == 'http:' || a.protocol == 'https:') {
+        return a.href
+    }
+    return "<invalid URL>"
 }
 
 export default defineComponent({
@@ -60,17 +204,28 @@ export default defineComponent({
             required: true,
         },
     },
-    data(): { pixelBalance: BigNumberish, blocks: Block[], updateIndex: number, pixel: string, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, blockNumbers: number[], pixels: string[], cost: number } {
+    data(): { 
+            lockTimeStamp: number, pixelBalance: BigNumber, pixelTotalSupply: BigNumber, blocks: Block[], updateIndex: number, pixel: string, 
+            buying: boolean, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, mouseBelowHalf: boolean, mx: number, my: number,
+            selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, 
+            blockNumbers: number[], pixels: string[], cost: number, duplicateBlocks: number, url: string, description: string, now: number } {
         return {
-            pixelBalance: 0,
+            lockTimeStamp: 0,
+            pixelBalance: BigNumber.from(0),
+            pixelTotalSupply: BigNumber.from(0),
 
             blocks: [],
             updateIndex: 0,
 
             pixel: "",
-            image: null,
             canvas: null,
 
+            mouseBelowHalf: false,
+            mx: -1,
+            my: -1,
+
+            buying: false,
+            image: null,
             selecting: false,
             selected: false,
             startSelectX: 0,
@@ -80,111 +235,206 @@ export default defineComponent({
             blockNumbers: [],
             pixels: [],
             cost: 0,
+            duplicateBlocks: 0,
+            url: "",
+            description: "",
+            now: Date.now(),
         }
     },
-    created() {
+    async created() {
         this.pixel = PixelDeployment.address
-        for (let i = 0; i < 10000; i++) {
-            this.blocks.push({
-                owner: "",
-                lastPrice: BigNumber.from(0),
-                lastSold: 0,
-                url: "",
-                description: "",
-                pixels: ""
-            })
+        setInterval(() => this.now = Date.now(), 1000);
+
+        let dataStr = localStorage.getItem("data")
+        if (dataStr && DecompressionStream) {
+            let dataNum = []
+            for (var i = 0; i < dataStr.length; i++) {
+                dataNum.push(dataStr.charCodeAt(i));
+            }
+            const cs = new DecompressionStream("gzip");
+            const writer = cs.writable.getWriter();
+            writer.write(Uint8Array.from(dataNum));
+            writer.close();
+            let result = new TextDecoder().decode(await new Response(cs.readable).arrayBuffer())
+            let data = JSON.parse(result)
+            this.blocks = data.blocks
+            this.updateIndex = data.updateIndex
+        }
+
+        if (this.updateIndex < Cache.updateIndex) {
+            this.blocks = Cache.blocks
+            this.updateIndex = Cache.updateIndex
+        }
+
+        if (!this.blocks.length) {
+            for (let i = 0; i < 10000; i++) {
+                this.blocks.push({
+                    owner: "",
+                    lastPrice: 0,
+                    url: "",
+                    description: "",
+                    pixels: ""
+                })
+            }
         }
     },
     computed: {
         selectionStyle() {
-            let style = "position: absolute; background: blue; pointer-events: none;"
+            let style = "position: absolute; pointer-events: none;"
             style += this.selecting || this.selected ? "" : "display: none;"
-            style += "left: " + this.startSelectX * 10 + "px;"
-            style += "top: " + this.startSelectY * 10 + "px;"
-            style += "width: " + (this.endSelectX - this.startSelectX + 1) * 10 + "px;"
-            style += "height: " + (this.endSelectY - this.startSelectY + 1) * 10 + "px;"
+            if (this.startSelectX <= this.endSelectX) {
+                style += "left: " + this.startSelectX * 10 + "px;"
+                style += "width: " + (this.endSelectX - this.startSelectX + 1) * 10 + "px;"
+            } else {
+                style += "left: " + this.endSelectX * 10 + "px;"
+                style += "width: " + (this.startSelectX - this.endSelectX + 1) * 10 + "px;"
+            }
+
+            if (this.startSelectY <= this.endSelectY) {
+                style += "top: " + this.startSelectY * 10 + "px;"
+                style += "height: " + (this.endSelectY - this.startSelectY + 1) * 10 + "px;"
+            } else {
+                style += "top: " + this.endSelectY * 10 + "px;"
+                style += "height: " + (this.startSelectY - this.endSelectY + 1) * 10 + "px;"
+            }
             return style
         },
-        blockWidth(): number { return this.endSelectX - this.startSelectX + 1 },
-        blockHeight(): number { return this.endSelectY - this.startSelectY + 1 },
+        wrongNetwork(): boolean { return this.info.chainId != 31773 },
+        tooltip(): boolean { return this.mx != -1 && !this.buying },
+        tooltipBlock(): Block | null { return this.tooltip && this.blocks.length == 10000 ? this.blocks[Math.floor(this.my / 10) * 100 + Math.floor(this.mx / 10)] : null},
+        tooltipStyle(): string {
+            let style = "position: absolute; pointer-events: none; margin: 5px; padding: 5px; background-color: grey;"
+            style += "left: " + this.mx + "px;"
+            style += "top: " + this.my + "px;"
+            return style
+        },
+        blockWidth(): number { return Math.abs(this.endSelectX - this.startSelectX) + 1 },
+        blockHeight(): number { return Math.abs(this.endSelectY - this.startSelectY) + 1 },
+        lockDate(): Date | null { return this.lockTimeStamp ? new Date(this.lockTimeStamp * 1000) : null },
+        locked(): boolean { return this.now > this.lockTimeStamp * 1000 ? true : false },
+        lockDiff(): number { return this.lockDate ? this.lockDate.getTime() - this.now : 0 },
+        lockDiffDays(): number { return Math.floor(this.lockDiff / (24 * 60 * 60 * 1000)) },
+        lockDiffHours(): number { return Math.floor(this.lockDiff / (60 * 60 * 1000)) % 24 },
+        lockDiffMinutes(): number { return Math.floor(this.lockDiff / (60 * 1000)) % 60 },
+        lockDiffSeconds(): number { return Math.floor(this.lockDiff / (1000)) % 60 },
     },
     watch: {
         "info.block": async function() {
-            console.log(this.info.block)
+            console.log("Block", this.info.block)
             let ctx = this.canvas?.getContext("2d")
-            console.log(this.canvas, ctx)
             if (window.provider && this.info.address && ctx) {
                 console.log(this.info.address)
                 const signer = window.provider?.getSigner(this.info.address)
                 let p = PixelFactory.connect(this.pixel, signer)
                 this.pixelBalance = await p.balanceOf(this.info.address)
+                this.pixelTotalSupply = await p.totalSupply()
+
+                if (!this.lockTimeStamp) {
+                    this.lockTimeStamp = (await p.lockTimestamp()).toNumber()
+                }
 
                 let currentUpdatesCount = await p.updatesCount()
-                if (currentUpdatesCount.toNumber() > this.updateIndex) {
-                    let updates = [...new Set((await p.getUpdates(this.updateIndex)).map(bn => bn.toNumber()))]
-                    let updatedBlocks = await p.getBlocks(updates)
-                    updatedBlocks.forEach(block => {
-                        this.blocks[block.number].owner = block.owner
-                        this.blocks[block.number].lastPrice = block.lastPrice
-                        this.blocks[block.number].lastSold = block.lastSold
-                        this.blocks[block.number].url = block.url
-                        this.blocks[block.number].description = block.description
-                        this.blocks[block.number].pixels = block.pixels
+                while (currentUpdatesCount.toNumber() > this.updateIndex) {
+                    console.log("Getting", this.updateIndex, currentUpdatesCount.toNumber())
+                    let updates = [...new Set((await p.getUpdates(this.updateIndex, 1000)).map(bn => bn.toNumber()))]
+                    this.updateIndex = currentUpdatesCount.toNumber() - this.updateIndex > 1000 ? this.updateIndex + 1000 : currentUpdatesCount.toNumber()
+                    while (updates.length) {
+                        console.log(updates.length, "left")
+                        let updatedBlocks = await p.getBlocks(updates.splice(0, 200))
+                        updatedBlocks.forEach(block => {
+                            this.blocks[block.number].owner = block.owner
+                            this.blocks[block.number].lastPrice = block.lastPrice.toDec(18).toNumber()
+                            this.blocks[block.number].url = cleanURI(block.url)
+                            this.blocks[block.number].description = block.description
+                            this.blocks[block.number].pixels = block.pixels
 
-                        if (block.pixels && ctx) {
-                            let data: ImageData = ctx.createImageData(10, 10)
-                            for(let i = 0; i < 100; i++) {
-                                let hex = block.pixels.substr(2 + i * 6, 2)
-                                data.data[i * 4] = BigNumber.from("0x" + hex).toNumber()
-                                hex = block.pixels.substr(4 + i * 6, 2)
-                                data.data[i * 4 + 1] = BigNumber.from("0x" + hex).toNumber()
-                                hex = block.pixels.substr(6 + i * 6, 2)
-                                data.data[i * 4 + 2] = BigNumber.from("0x" + hex).toNumber()
-                                data.data[i * 4 + 3] = 255
+                            if (block.pixels && ctx) {
+                                let data: ImageData = ctx.createImageData(10, 10)
+                                for(let i = 0; i < 100; i++) {
+                                    let hex = block.pixels.substr(2 + i * 6, 2)
+                                    data.data[i * 4] = BigNumber.from("0x" + hex).toNumber()
+                                    hex = block.pixels.substr(4 + i * 6, 2)
+                                    data.data[i * 4 + 1] = BigNumber.from("0x" + hex).toNumber()
+                                    hex = block.pixels.substr(6 + i * 6, 2)
+                                    data.data[i * 4 + 2] = BigNumber.from("0x" + hex).toNumber()
+                                    data.data[i * 4 + 3] = 255
+                                }
+                                ctx.putImageData(data, (block.number % 100) * 10, Math.floor(block.number / 100) * 10)
                             }
-                            ctx.putImageData(data, (block.number % 100) * 10, Math.floor(block.number / 100) * 10)
-                        }
-                    })
+                        })
+                    }
+                    if (CompressionStream) {
+                        const byteArray = new TextEncoder().encode(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}));
+                        const cs = new CompressionStream("gzip");
+                        const writer = cs.writable.getWriter();
+                        writer.write(byteArray);
+                        writer.close();
+                        let compressed = await new Response(cs.readable).arrayBuffer();
+                        localStorage.setItem("data", Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join(''))
+                    }
                 }
             }
         }
     },
     methods: {
         async buy() {
+            this.image = null
+            this.selected = false
+            this.buying = false
             if (window.provider) {
                 const signer = window.provider?.getSigner(this.info.address)
                 let p = PixelFactory.connect(this.pixel, signer)
-                let cost = await p["getCost(uint256[])"](this.blockNumbers)
-                p["setBlocks(uint256[],string,string,bytes[])"](this.blockNumbers, "https://pixel.inc", "Pixel Inc!", this.pixels, { value: cost })
+                for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
+                    let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
+                    let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
+                    let cost = await p["getCost(uint256[])"](blockNumbers)
+                    p["setBlocks(uint256[],string,string,bytes[])"](blockNumbers, this.url, this.description, pixels, { value: cost, gasPrice: 0 })
+                }
             }
         },
-        setup_image_loader() {
+        imageLoad(e: Event) {
             const self = this
-            let imageLoader = document.getElementById("imageLoader") as HTMLInputElement
-            imageLoader.onchange = function (e) {
-                var reader = new FileReader()
-                reader.onload = function (event) {
-                    self.image = new Image()
-                    self.image.src = event.target?.result as string
-                    let preview = self.$refs.preview as HTMLImageElement
-                    preview.src = event.target?.result as string
-                }
-                const target = e.target as HTMLInputElement
-                if (target.files?.length) {
-                    reader.readAsDataURL(target.files[0])
-                }
+            console.log("Changed")
+            var reader = new FileReader()
+            reader.onload = function (event) {
+                self.image = new Image()
+                self.image.src = event.target?.result as string
+                let preview = self.$refs.preview as HTMLImageElement
+                preview.src = event.target?.result as string
+            }
+            const target = (e as InputEvent).target as HTMLInputElement
+            if (target.files?.length) {
+                reader.readAsDataURL(target.files[0])
             }
         }
     },
     mounted() {
-        this.canvas = document.getElementById("canvas") as HTMLCanvasElement
         const self = this
-        this.setup_image_loader()
+        nextTick(() => {
+            this.canvas = document.getElementById("canvas") as HTMLCanvasElement
+            let ctx = this.canvas?.getContext("2d")
+            let start = Date.now()
+            if (ctx) {
+                for (let b = 0; b < 10000; b++) {
+                    let block = this.blocks[b]
+                    let pixels = block.pixels
+                    if (pixels) {
+                        let data: ImageData = ctx.createImageData(10, 10)
+                        for(let i = 0; i < 100; i++) {
+                            let color = parseInt(pixels.substr(2 + i * 6, 6), 16)
+                            data.data.set([Math.floor(color / 65536), Math.floor((color % 65536) / 256), color % 256, 255], i * 4)
+                        }
+                        ctx.putImageData(data, (b % 100) * 10, Math.floor(b / 100) * 10)
+                    }
+                }
+            }
+            console.log(Date.now() - start)
+        })
         
         let root = document.getElementById("selectionArea")
         if (root) {
             root.onmousedown = function (e) {
-                if (self.image) {
+                if (self.image && !self.selected) {
                     e.preventDefault()
                     self.blockNumbers = []
                     self.pixels = []
@@ -202,38 +452,60 @@ export default defineComponent({
                     self.endSelectX = Math.floor((e.pageX - (root?.offsetLeft || 0)) / 10)
                     self.endSelectY = Math.floor((e.pageY - (root?.offsetTop || 0)) / 10)
                 }
+                self.mouseBelowHalf = e.offsetY > 500
+                self.mx = e.offsetX < 1000 ? e.offsetX : 999
+                self.my = e.offsetY < 1000 ? e.offsetY : 999
             }
 
             root.onmouseleave = function (e) {
                 self.selecting = false
-                console.log("mouseleave")
+                self.mx = -1
+                self.my = -1
             }
 
             root.onmouseup = async function (e) {
                 if (self.selecting && self.image) {
                     self.selecting = false
-                    self.selected = true
                     e.preventDefault()
+
+                    if (self.endSelectX < self.startSelectX) { [self.startSelectX, self.endSelectX] = [self.endSelectX, self.startSelectX] }
+                    if (self.endSelectY < self.startSelectY) { [self.startSelectY, self.endSelectY] = [self.endSelectY, self.startSelectY] }
 
                     let canvas = document.createElement("CANVAS") as HTMLCanvasElement
                     canvas.width = self.blockWidth * 10
                     canvas.height = self.blockHeight * 10
                     let ctx = canvas.getContext("2d") as CanvasRenderingContext2D
                     ctx.drawImage(self.image, 0, 0, canvas.width, canvas.height)
+                    self.duplicateBlocks = 0
                     for (let x = 0; x < self.blockWidth; x++) {
                         for (let y = 0; y < self.blockHeight; y++) {
                             self.pixel = PixelDeployment.address
                             let data = ctx.getImageData(x * 10, y * 10, 10, 10).data.filter((e, i) => i % 4 < 3)
                             let hex = "0x" + [...data].map(x => x.toString(16).padStart(2, '0')).join('');
-                            self.blockNumbers.push((self.startSelectY + y) * 100 + self.startSelectX + x)
-                            self.pixels.push(hex)
+                            let blockNumber = (self.startSelectY + y) * 100 + self.startSelectX + x;
+                            if (self.blocks[blockNumber].pixels != hex || self.blocks[blockNumber].owner.toLowerCase() != self.info.address.toLowerCase()) {
+                                self.blockNumbers.push(blockNumber)
+                                self.pixels.push(hex)
+                            } else {
+                                self.url = self.blocks[blockNumber].url
+                                self.description = self.blocks[blockNumber].description
+                                console.log(self.url, self.blocks[blockNumber].url)
+                                self.duplicateBlocks++
+                            }
                         }
                     }
 
-                    if (window.provider) {
-                        const signer = window.provider?.getSigner(self.info.address)
-                        let p = PixelFactory.connect(self.pixel, signer)
-                        self.cost = (await p["getCost(uint256[])"](self.blockNumbers)).div("10000000000000000").toNumber() / 100
+                    if (self.blockNumbers.length) {
+                        self.selected = true
+
+                        if (window.provider) {
+                            const signer = window.provider?.getSigner(self.info.address)
+                            let p = PixelFactory.connect(self.pixel, signer)
+                            self.cost = (await p["getCost(uint256[])"](self.blockNumbers)).div("10000000000000000").toNumber() / 100
+                        }
+                    } else {
+                        self.buying = false
+                        self.image = null
                     }
                 }
             }
@@ -241,6 +513,9 @@ export default defineComponent({
             root.onclick = function (e) {
                 if (self.image) {
                     e.preventDefault()
+                } else {
+                    if (!self.buying && self.tooltipBlock && self.tooltipBlock.url)
+                    window.open(self.tooltipBlock.url, "_blank")
                 }
             }
         }

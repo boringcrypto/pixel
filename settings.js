@@ -5,6 +5,13 @@ module.exports = {
                 default: 0, // here this will by default take the first account as deployer
             },
         },
+        networks: {
+            hardhat: {
+                forking: {
+                    blockNumber: 12803945
+                }
+            }
+        }        
     },
     solcover: {},
     prettier: {},
