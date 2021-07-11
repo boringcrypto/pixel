@@ -7,15 +7,11 @@
                 Ends in: {{ lockDiffDays }} days {{ lockDiffHours }}:{{ lockDiffMinutes }}:{{ lockDiffSeconds }}<br>
                 Address: {{ info.address }}<br>
                 <span v-if="info.chainId == 0">
-                    Network not connected
+                    Network not connected<br>
                 </span>
-                <span v-else-if="!wrongNetwork">
-                    Network Polygon
+                <span v-else-if="wrongNetwork">
+                    Wrong network <button @click="gotoPolygon">Switch to Mumbai</button><br>
                 </span>
-                <span v-else>
-                    Wrong network
-                </span>
-                <br>
                 {{ pixelBalance.print(18, 2) }} PIXELs of {{ pixelTotalSupply.print(18, 2) }}<br>
             </td>
         </tr>
@@ -301,7 +297,7 @@ export default defineComponent({
             }
             return style
         },
-        wrongNetwork(): boolean { return this.info.chainId != 31773 },
+        wrongNetwork(): boolean { return this.info.chainId != 80001 },
         tooltip(): boolean { return this.mx != -1 && !this.buying },
         tooltipBlock(): Block | null { return this.tooltip && this.blocks.length == 10000 ? this.blocks[Math.floor(this.my / 10) * 100 + Math.floor(this.mx / 10)] : null},
         tooltipStyle(): string {
@@ -381,6 +377,25 @@ export default defineComponent({
         }
     },
     methods: {
+        async gotoPolygon() {
+            let ethereum = window.ethereum;
+            const data = [{
+                chainId: "0x13881",
+                chainName: 'Mumbai (Polygon Testnet)',
+                nativeCurrency:
+                    {
+                        name: 'MATIC',
+                        symbol: 'MATIC',
+                        decimals: 18
+                    },
+                rpcUrls: ['https://rpc-mumbai.maticvigil.com/'],
+                blockExplorerUrls: ['https://mumbai.polygonscan.com/'],
+            }]
+            const tx = await ethereum.request({method: 'wallet_addEthereumChain', params:data}).catch()
+            if (tx) {
+                console.log(tx)
+            }
+        },
         async buy() {
             this.image = null
             this.selected = false
