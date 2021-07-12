@@ -415,6 +415,7 @@ export default defineComponent({
 
                 let currentUpdatesCount = await p.updatesCount()
                 while (currentUpdatesCount.toNumber() > this.updateIndex) {
+                    this.loading = true
                     console.log("Getting", this.updateIndex, currentUpdatesCount.toNumber())
                     let updates = [...new Set((await p.getUpdates(this.updateIndex, 1000)).map(bn => bn.toNumber()))]
                     this.updateIndex = currentUpdatesCount.toNumber() - this.updateIndex > 1000 ? this.updateIndex + 1000 : currentUpdatesCount.toNumber()
@@ -453,6 +454,7 @@ export default defineComponent({
                         localStorage.setItem("data", Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join(''))
                     }
                 }
+                this.loading = false
             }
         }
     },
