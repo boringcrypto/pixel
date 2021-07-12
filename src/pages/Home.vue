@@ -1,6 +1,10 @@
 <style>
+    .window {
+        color: black;
+    }
+    
     .window-body, button {
-        font-family: "Comic Sans MS"
+        font-family: "Comic Sans MS";
     }
 
     .upload-button {
