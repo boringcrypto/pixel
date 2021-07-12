@@ -2,7 +2,7 @@
     .window {
         color: black;
     }
-    
+
     .window-body, button {
         font-family: "Comic Sans MS";
     }
@@ -512,9 +512,12 @@ export default defineComponent({
                     self.endSelectX = Math.floor((e.pageX - (root?.offsetLeft || 0)) / 10)
                     self.endSelectY = Math.floor((e.pageY - (root?.offsetTop || 0)) / 10)
                 }
-                self.mouseBelowHalf = e.offsetY > 500
-                self.mx = e.offsetX < 1000 ? e.offsetX : 999
-                self.my = e.offsetY < 1000 ? e.offsetY : 999
+                console.log(e.target)
+                if (e.target === self.canvas) {
+                    self.mouseBelowHalf = e.offsetY > 500
+                    self.mx = e.offsetX < 1000 ? e.offsetX : 999
+                    self.my = e.offsetY < 1000 ? e.offsetY : 999
+                }
             }
 
             root.onmouseleave = function (e) {
@@ -572,8 +575,8 @@ export default defineComponent({
             root.onclick = function (e) {
                 if (self.image) {
                     e.preventDefault()
-                } else {
-                    if (!self.buying && self.tooltipBlock && self.tooltipBlock.url)
+                } else if (e.target === self.canvas) {
+                    if (!self.buying && self.tooltip && self.tooltipBlock && self.tooltipBlock.url)
                     window.open(self.tooltipBlock.url, "_blank")
                 }
             }
