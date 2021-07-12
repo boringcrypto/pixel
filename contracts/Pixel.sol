@@ -208,12 +208,11 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     BlockLink[] public link;
     // data is organized in blocks of 10x10. There are 100x100 blocks. Base is 0 and counting goes left to right, then top to bottom.
     Block[10000] public blk;
-    uint256 public immutable lockTimestamp;
+    uint256 public constant START_TIMESTAMP = 1626368400;
+    uint256 public constant LOCK_TIMESTAMP = START_TIMESTAMP + 2 weeks;
     uint256[] public updates;
 
     constructor() public {
-        lockTimestamp = block.timestamp + 2 weeks;
-
         // Set link[0] to blank
         link.push(BlockLink({
             url: "",
@@ -223,7 +222,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
 
     function mintCanvas() external {
         // The canvas is final
-        require(block.timestamp >= lockTimestamp);
+        require(block.timestamp >= LOCK_TIMESTAMP);
         // Send any funds left to the owner. If this fails, continue anyway to prevent blocking.
         bool success;
         (success, ) = owner.call{value: address(this).balance}("");
@@ -231,8 +230,8 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         canvas = address(new Canvas(this));
     }
 
-    modifier notLocked() {
-        require(block.timestamp < lockTimestamp);
+    modifier onlyCreationPhase() {
+        require(block.timestamp >= START_TIMESTAMP && block.timestamp < LOCK_TIMESTAMP);
         _;
     }
 
@@ -269,7 +268,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         uint256[] calldata blockNumbers,
         uint32 linkNumber,
         bytes[] calldata pixels
-    ) public payable notLocked() {
+    ) public payable onlyCreationPhase() {
         // This error may happen when you calculate the correct cost, but someone buys one of your blocks before your transaction goes through
         // This is tested first to reduce wasted gas in case of failure
         uint256 cost = getCost(blockNumbers);
@@ -306,7 +305,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         string calldata url,
         string calldata description,
         bytes[] calldata pixels
-    ) public payable notLocked() returns (uint32 linkNumber) {
+    ) public payable onlyCreationPhase() returns (uint32 linkNumber) {
         BlockLink memory newLink;
         newLink.url = url;
         newLink.description = description;
@@ -331,7 +330,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         if (token != IERC20(0)) {
             // Withdraw any accidental token deposits
             token.safeTransfer(owner, token.balanceOf(address(this)));
-        } else if (block.timestamp < lockTimestamp) {
+        } else if (block.timestamp < LOCK_TIMESTAMP) {
             // After canvas is created, funds go to PIXEL holders and can't be withdrawn by the owner
             bool success;
             (success, ) = owner.call{value: address(this).balance}("");

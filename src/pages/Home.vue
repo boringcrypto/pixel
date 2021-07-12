@@ -14,6 +14,15 @@
         margin-bottom: 8px;
         margin-top: auto;
     }
+
+    #drop_zone {
+        border: 3px dashed rgb(13, 13, 13);
+        width:  80%;
+        height: 100px;
+        cursor: pointer;
+        margin-left: auto;
+        margin-right: auto;
+    }
 </style>
 
 <template>
@@ -53,7 +62,7 @@
                 </table>
                 <br>
                 <strong>Creation Phase</strong><br>
-                ends in: {{ lockDiffDays }} days {{ lockDiffHours }}:{{ lockDiffMinutes }}:{{ lockDiffSeconds }}
+                ends in {{ lockDiffDays }} days {{ lockDiffHours }} hours {{ lockDiffMinutes }} min {{ lockDiffSeconds }} sec
             </td>
         </tr>
     </table>
@@ -76,7 +85,7 @@
             </div>
         </div>        
         <img ref="preview" :style="selectionStyle" />
-        <div v-if="buying && !image" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%)">
+        <div v-if="buying && !image" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
             <div class="title-bar">
                 <div class="title-bar-text">Claim your piece of the canvas, get some PIXELs</div>
                 <div class="title-bar-controls">
@@ -86,7 +95,11 @@
             <div class="window-body">
                 <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 1. Upload an image</h3>
                 <p>Select the image you would like to draw onto the canvas. For the best results, prepare an image at the correct size. 10x10, 20x20, 30x60, etc.</p>
-                <input type="file" @input="imageLoad" />
+                <div id="drop_zone" @drop="dropHandler" @dragover="dragOverHandler" onclick="document.getElementById('fileInput').click()">
+                    <br><br>
+                    <p>Drag your image here or click to Browse...</p>
+                </div>
+                <input type="file" id="fileInput" @input="imageLoad" style="display: none" />
             </div>
         </div>
 
@@ -143,11 +156,20 @@
                 <a href="https://www.webfreecounter.com/" target="_blank"><img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter"></a>
                 <!-- End of WebFreeCounter Code -->    
             </td>
-            <td></td>
+            <td>
+                <img style="float: right" src="../assets/tom.jpg" height="80">
+                <strong>Tom</strong><br>
+                "All my friends love this site!"
+            </td>
         </tr>
     </table>
     
-    
+    <div v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()">
+        <hr>
+        Admin<br>
+        <button @click="withdraw">Withdraw MATIC</button>
+        <button @click="mint">Mint CANVAS NFT</button>
+    </div>
 
     <hr>
     <img src="../assets/underconstruction.gif">
@@ -163,6 +185,7 @@ import {PixelFactory} from "../../types/ethers-contracts"
 import { BigNumber } from "@ethersproject/bignumber"
 import { nextTick } from "process"
 import Decimal from "decimal.js-light"
+import { ethers } from "ethers"
 
 declare module "decimal.js-light" {
     interface Decimal {
@@ -224,15 +247,16 @@ type Block = {
 }
 
 function cleanURI(uri: string) {
+    if (!uri) { return "" }
     let a = document.createElement("A") as HTMLAnchorElement
     if (!uri.startsWith("http:") && !uri.startsWith("https:")) {
         uri = "http://" + uri
     }
     a.href = uri
-    console.log("Protocol", a.protocol)
     if (a.protocol == 'http:' || a.protocol == 'https:') {
         return a.href
     }
+    console.log("Bad url", uri)
     return "<invalid URL>"
 }
 
@@ -452,9 +476,8 @@ export default defineComponent({
                 }
             }
         },
-        imageLoad(e: Event) {
+        load(file: Blob) {
             const self = this
-            console.log("Changed")
             var reader = new FileReader()
             reader.onload = function (event) {
                 self.image = new Image()
@@ -462,11 +485,45 @@ export default defineComponent({
                 let preview = self.$refs.preview as HTMLImageElement
                 preview.src = event.target?.result as string
             }
+            reader.readAsDataURL(file)
+        },
+        imageLoad(e: Event) {
             const target = (e as InputEvent).target as HTMLInputElement
             if (target.files?.length) {
-                reader.readAsDataURL(target.files[0])
+                this.load(target.files[0])
             }
-        }
+        },
+        dragOverHandler(ev: DragEvent) {
+            ev.preventDefault();
+        },
+        dropHandler(ev: DragEvent) {
+            ev.preventDefault();
+
+            if (ev.dataTransfer?.items) {
+                if (ev.dataTransfer.items[0].kind === 'file') {
+                    var file = ev.dataTransfer.items[0].getAsFile();
+                    if (file) {
+                        this.load(file)
+                    }
+                }
+            } else if (ev.dataTransfer) {
+                this.load(ev.dataTransfer.files[0])
+            }
+        },
+        async withdraw() {
+            if (window.provider) {
+                const signer = window.provider?.getSigner(this.info.address)
+                let p = PixelFactory.connect(this.pixel, signer)
+                await p.withdraw(ethers.constants.AddressZero)
+            }
+        },
+        async mint() {
+            if (window.provider) {
+                const signer = window.provider?.getSigner(this.info.address)
+                let p = PixelFactory.connect(this.pixel, signer)
+                await p.mintCanvas()
+            }
+        },
     },
     mounted() {
         const self = this
@@ -512,7 +569,6 @@ export default defineComponent({
                     self.endSelectX = Math.floor((e.pageX - (root?.offsetLeft || 0)) / 10)
                     self.endSelectY = Math.floor((e.pageY - (root?.offsetTop || 0)) / 10)
                 }
-                console.log(e.target)
                 if (e.target === self.canvas) {
                     self.mouseBelowHalf = e.offsetY > 500
                     self.mx = e.offsetX < 1000 ? e.offsetX : 999
