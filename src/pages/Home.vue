@@ -85,6 +85,16 @@
             </div>
         </div>        
         <img ref="preview" :style="selectionStyle" />
+
+        <div v-if="loading" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
+            <div class="title-bar">
+                <div class="title-bar-text">Loading...</div>
+            </div>
+            <div class="window-body">
+                <img src="../assets/McHammer.gif" />
+            </div>
+        </div>
+
         <div v-if="buying && !image" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
             <div class="title-bar">
                 <div class="title-bar-text">Claim your piece of the canvas, get some PIXELs</div>
@@ -96,6 +106,7 @@
                 <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 1. Upload an image</h3>
                 <p>Select the image you would like to draw onto the canvas. For the best results, prepare an image at the correct size. 10x10, 20x20, 30x60, etc.</p>
                 <div id="drop_zone" @drop="dropHandler" @dragover="dragOverHandler" onclick="document.getElementById('fileInput').click()">
+                    <img src="../assets/fileflip.gif" style="float: left; margin-left: 20px;" />
                     <br><br>
                     <p>Drag your image here or click to Browse...</p>
                 </div>
@@ -111,6 +122,7 @@
                 </div>
             </div>
             <div class="window-body">
+                <img src="../assets/measure.gif" />
                 <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 2. Select the area you like</h3>
                 <p>Use your mouse to click and drag the area where you would like the image to go.</p>
             </div>
@@ -142,6 +154,7 @@
                 <br>
                 <button @click="buy">Purchase</button>
             </div>
+            <img src="../assets/bsbpayperview.gif" style="width: 100%" />
         </div>        
     </div>
 
@@ -269,11 +282,13 @@ export default defineComponent({
         },
     },
     data(): { 
+            loading: boolean,
             lockTimeStamp: number, pixelBalance: BigNumber, pixelTotalSupply: BigNumber, blocks: Block[], updateIndex: number, pixel: string, 
             buying: boolean, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, mouseBelowHalf: boolean, mx: number, my: number,
             selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, 
             blockNumbers: number[], pixels: string[], cost: number, duplicateBlocks: number, url: string, description: string, now: number } {
         return {
+            loading: false,
             lockTimeStamp: 0,
             pixelBalance: BigNumber.from(0),
             pixelTotalSupply: BigNumber.from(0),
