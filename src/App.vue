@@ -1,7 +1,6 @@
 <style lang="scss">
-//@import "src/scss/main.scss";
     body {
-        background-image: url('/src/assets/bg.gif');
+        background-image: url('/src/assets/bgPattern.png');
     }
 </style>
 

@@ -1,27 +1,60 @@
+<style>
+    .window-body, button {
+        font-family: "Comic Sans MS"
+    }
+
+    .upload-button {
+        font-size: 14pt;
+        height: 38px;
+        width: 250px;
+        margin-bottom: 8px;
+        margin-top: auto;
+    }
+</style>
+
 <template>
     <table style="width: 1000px; margin: auto;">
         <tr>
-            <td style="text-align: left"><img alt="Pixel Inc Logo" src="../assets/pixelIncLogo.gif" height="100" /></td>
-            <td>
-                Ends in: {{ lockDiffDays }} days {{ lockDiffHours }}:{{ lockDiffMinutes }}:{{ lockDiffSeconds }}<br>
-                Address: {{ info.address }}<br>
+            <td style="text-align: left; vertical-align: top">
+                <img alt="Pixel Inc Logo" src="../assets/pixelIncLogo.png" height="100" /><br>
+                An experiment in collaborative 'art'<br>
+                and a tribute to web design of the past.
+            </td>
+            <td style="vertical-align: bottom">
+                <button @click="buying = true" class="upload-button">Upload your own pixels</button>
+            </td>
+            <td style="text-align: right">
                 <span v-if="info.chainId == 0">
-                    Network not connected<br>
+                    Network not connected
                 </span>
                 <span v-else-if="wrongNetwork">
-                    Wrong network <button @click="gotoPolygon">Switch to Mumbai</button><br>
+                    Wrong network <button @click="gotoPolygon">Switch to Mumbai</button>
                 </span>
-                {{ pixelBalance.print(18, 2) }} PIXELs of {{ pixelTotalSupply.print(18, 2) }}<br>
-            </td>
-        </tr>
-        <tr>
-            <td colspan="2">
-                <button v-if="!locked" @click="buying = true" style="font-size: 14pt; height: 32px; width: 250px;">Upload your own pixels</button>
+                <span v-else>
+                    <strong>Your wallet address</strong><br>
+                    {{ info.address }}
+                </span>
+                <br><br>
+                <table style="margin-left: auto;">
+                    <tbody>
+                        <tr>
+                            <td style="border: 3px ridge; padding: 4px;">Total PIXELs</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ pixelTotalSupply.print(18, 0) }}</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 3px ridge; padding: 4px;">You own</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ pixelBalance.print(18, 0) }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <br>
+                <strong>Creation Phase</strong><br>
+                ends in: {{ lockDiffDays }} days {{ lockDiffHours }}:{{ lockDiffMinutes }}:{{ lockDiffSeconds }}
             </td>
         </tr>
     </table>
 
-    <div id="selectionArea" :style="'position: relative; width: 1000px; height: 1000px; background-color: white; margin-left: auto; margin-right: auto;' + (tooltip ? 'cursor: pointer' : '')">
+    <div id="selectionArea" :style="'position: relative; width: 1000px; height: 1000px; background-color: rgb(40, 95, 170); border: 1px solid rgb(169, 216,235); margin-left: auto; margin-right: auto;' + (tooltip ? 'cursor: pointer' : '')">
         <canvas id="canvas" width="1000" height="1000" />
         <div class="window" v-if="tooltip" ref="tooltip" :style="tooltipStyle">
             <div class="window-body">
@@ -47,7 +80,7 @@
                 </div>
             </div>
             <div class="window-body">
-                <h4>Step 1. Upload an image</h4>
+                <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 1. Upload an image</h3>
                 <p>Select the image you would like to draw onto the canvas. For the best results, prepare an image at the correct size. 10x10, 20x20, 30x60, etc.</p>
                 <input type="file" @input="imageLoad" />
             </div>
@@ -61,7 +94,7 @@
                 </div>
             </div>
             <div class="window-body">
-                <h4>Step 2. Select the area you like</h4>
+                <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 2. Select the area you like</h3>
                 <p>Use your mouse to click and drag the area where you would like the image to go.</p>
             </div>
         </div>
@@ -74,7 +107,7 @@
                 </div>
             </div>
             <div class="window-body">
-                <h4>Step 3. Purchase</h4>
+                <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 3. Purchase</h3>
                 <p>
                     Size: {{ blockWidth * 10 }}x{{ blockHeight * 10 }} pixels<br>
                     Cost: {{ cost }} MATIC<br>
@@ -98,21 +131,20 @@
     <table style="width: 1000px; margin: auto;">
         <tr>
             <td style="text-align: left">
-                <button>The PIXEL token</button>
-                <button>The CANVAS NFT</button>
+                <img src="../assets/catsheepnow.gif" height="80">
             </td>
             <td style="text-align: left">
-                
+                You are visitor:<br>
+                <!-- Start of WebFreeCounter Code -->
+                <a href="https://www.webfreecounter.com/" target="_blank"><img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter"></a>
+                <!-- End of WebFreeCounter Code -->    
             </td>
             <td></td>
         </tr>
     </table>
     
-    <img src="../assets/catsheepnow.gif" height="80">
+    
 
-    <!-- Start of WebFreeCounter Code -->
-    <a href="https://www.webfreecounter.com/" target="_blank"><img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter"></a>
-    <!-- End of WebFreeCounter Code -->    
     <hr>
     <img src="../assets/underconstruction.gif">
 
@@ -328,17 +360,15 @@ export default defineComponent({
             console.log("Block", this.info.block)
             let ctx = this.canvas?.getContext("2d")
             if (window.provider && this.info.address && ctx) {
-                console.log(this.info.address)
                 const signer = window.provider?.getSigner(this.info.address)
                 let p = PixelFactory.connect(this.pixel, signer)
 
                 if (!this.lockTimeStamp) {
-                    this.pixelBalance = await p.balanceOf(this.info.address)
-                    this.pixelTotalSupply = await p.totalSupply()
                     this.lockTimeStamp = (await p.lockTimestamp()).toNumber()
-                    console.log(this.pixelBalance, this.pixelTotalSupply, this.lockTimeStamp)
-                    console.log(await p["getCost(uint256[])"]([1,2, 3]))
                 }
+
+                this.pixelBalance = await p.balanceOf(this.info.address)
+                this.pixelTotalSupply = await p.totalSupply()
 
                 let currentUpdatesCount = await p.updatesCount()
                 while (currentUpdatesCount.toNumber() > this.updateIndex) {
