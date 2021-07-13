@@ -180,7 +180,7 @@
         </tr>
         <tr>
             <td style="text-align: center" colspan="3">
-                <img src="../assets/ambassador.png" />
+                <img src="../assets/ambassador.svg" style="height: 160px; margin: -30px" />
                 <p>
                     Your ambassador link is:<br>
                     https://pixel.com/?ref={{ info.address }}<br>
@@ -402,15 +402,7 @@ export default defineComponent({
         }
 
         if (!this.blocks.length) {
-            for (let i = 0; i < 10000; i++) {
-                this.blocks.push({
-                    owner: "",
-                    lastPrice: 0,
-                    url: "",
-                    description: "",
-                    pixels: ""
-                })
-            }
+            for (let i = 0; i < 10000; i++) { this.blocks.push({owner: "", lastPrice: 0, url: "", description: "", pixels: "" }) }
         }
 
         let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0]);
@@ -492,6 +484,11 @@ export default defineComponent({
                 console.log(this.pollInfo)
 
                 let currentUpdatesCount = this.pollInfo.updates.toNumber()
+                if (currentUpdatesCount < this.updateIndex) {
+                    localStorage.removeItem("data")
+                    for (let i = 0; i < 10000; i++) { this.blocks.push({owner: "", lastPrice: 0, url: "", description: "", pixels: "" }) }
+                    this.updateIndex = 0
+                }
                 while (currentUpdatesCount > this.updateIndex) {
                     this.loading = true
                     console.log("Getting", this.updateIndex, currentUpdatesCount)
