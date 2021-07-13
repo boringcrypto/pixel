@@ -183,7 +183,7 @@
                 <img src="../assets/ambassador.svg" style="height: 160px; margin: -30px" />
                 <p>
                     Your ambassador link is:<br>
-                    https://pixel.com/?ref={{ info.address }}<br>
+                    https://pixel.inc/?ref={{ info.address }}<br>
                     <br>
                     <table v-if="pollInfo" style="margin: auto">
                         <tr>
