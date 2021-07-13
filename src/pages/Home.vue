@@ -488,6 +488,7 @@ export default defineComponent({
                     localStorage.removeItem("data")
                     for (let i = 0; i < 10000; i++) { this.blocks.push({owner: "", lastPrice: 0, url: "", description: "", pixels: "" }) }
                     this.updateIndex = 0
+                    ctx.clearRect(0, 0, 1000, 1000)
                 }
                 while (currentUpdatesCount > this.updateIndex) {
                     this.loading = true
