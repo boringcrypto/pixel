@@ -8,7 +8,7 @@ module.exports = {
         networks: {
             hardhat: {
                 forking: {
-                    blockNumber: 12803945
+                    blockNumber: 12818185
                 }
             }
         }        

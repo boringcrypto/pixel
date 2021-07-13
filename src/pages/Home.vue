@@ -34,29 +34,32 @@
                 and a tribute to web design of the past.
             </td>
             <td style="vertical-align: bottom">
-                <button @click="buying = true" class="upload-button">Upload your own pixels</button>
+                <button v-if="info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>
             </td>
             <td style="text-align: right">
                 <span v-if="info.chainId == 0">
                     Network not connected
                 </span>
                 <span v-else-if="wrongNetwork">
-                    Wrong network <button @click="gotoPolygon">Switch to Mumbai</button>
+                    Wrong network <button @click="switchToNetwork">Switch to {{ chainName }}</button>
+                </span>
+                <span v-else-if="!info.address">
+                    <button @click="info.connect">Connect Metamask</button>
                 </span>
                 <span v-else>
                     <strong>Your wallet address</strong><br>
                     {{ info.address }}
                 </span>
                 <br><br>
-                <table style="margin-left: auto;">
+                <table v-if="pollInfo" style="margin-left: auto;">
                     <tbody>
                         <tr>
                             <td style="border: 3px ridge; padding: 4px;">Total PIXELs</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ pixelTotalSupply.print(18, 0) }}</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ pollInfo.supply.print(18, 0) }}</td>
                         </tr>
-                        <tr>
+                        <tr v-if="info.address">
                             <td style="border: 3px ridge; padding: 4px;">You own</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ pixelBalance.print(18, 0) }}</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ pollInfo.balance.print(18, 0) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -69,6 +72,15 @@
 
     <div id="selectionArea" :style="'position: relative; width: 1000px; height: 1000px; background-color: rgb(40, 95, 170); border: 1px solid rgb(169, 216,235); margin-left: auto; margin-right: auto;' + (tooltip ? 'cursor: pointer' : '')">
         <canvas id="canvas" width="1000" height="1000" />
+        <div v-if="loading" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
+            <div class="title-bar">
+                <div class="title-bar-text">Loading...</div>
+            </div>
+            <div class="window-body">
+                <img src="../assets/McHammer.gif" />
+            </div>
+        </div>
+
         <div class="window" v-if="tooltip" ref="tooltip" :style="tooltipStyle">
             <div class="window-body">
                 <span v-if="tooltipBlock?.owner">
@@ -85,15 +97,6 @@
             </div>
         </div>        
         <img ref="preview" :style="selectionStyle" />
-
-        <div v-if="loading" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
-            <div class="title-bar">
-                <div class="title-bar-text">Loading...</div>
-            </div>
-            <div class="window-body">
-                <img src="../assets/McHammer.gif" />
-            </div>
-        </div>
 
         <div v-if="buying && !image" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
             <div class="title-bar">
@@ -175,6 +178,42 @@
                 "All my friends love this site!"
             </td>
         </tr>
+        <tr>
+            <td style="text-align: center" colspan="3">
+                <img src="../assets/ambassador.png" />
+                <p>
+                    Your ambassador link is:<br>
+                    https://pixel.com/?ref={{ info.address }}<br>
+                    <br>
+                    <table v-if="pollInfo" style="margin: auto">
+                        <tr>
+                            <td></td>
+                            <td>Payout</td>
+                            <td>Lemmings</td>
+                            <td>Earnings</td>
+                        </tr>
+                        <tr>
+                            <td>Tier 1</td>
+                            <td>20%</td>
+                            <td>{{ pollInfo.downline.tier1 }}</td>
+                            <td>{{ pollInfo.downline.earnings1.print(18, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Tier 2</td>
+                            <td>10%</td>
+                            <td>{{ pollInfo.downline.tier2 }}</td>
+                            <td>{{ pollInfo.downline.earnings2.print(18, 2) }}</td>
+                        </tr>
+                        <tr>
+                            <td>Tier 3</td>
+                            <td>5%</td>
+                            <td>{{ pollInfo.downline.tier3 }}</td>
+                            <td>{{ pollInfo.downline.earnings3.print(18, 2) }}</td>
+                        </tr>
+                    </table>
+                </p>
+            </td>
+        </tr>
     </table>
     
     <div v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()">
@@ -186,19 +225,22 @@
 
     <hr>
     <img src="../assets/underconstruction.gif">
+    <br>
+    <br>
+    PIXEL address is {{ contractAddress }}
 
 </template>
 
 <script lang="ts">
 import {defineComponent, PropType} from "@vue/runtime-core"
 import {ProviderInfo} from "../components/Web3.vue"
-import * as PixelDeployment from "../../deployments/localhost/Pixel.json"
 import * as Cache from "../cache.json"
 import {PixelFactory} from "../../types/ethers-contracts"
 import { BigNumber } from "@ethersproject/bignumber"
 import { nextTick } from "process"
 import Decimal from "decimal.js-light"
 import { ethers } from "ethers"
+import { constants } from "../constants/test"
 
 declare module "decimal.js-light" {
     interface Decimal {
@@ -259,6 +301,21 @@ type Block = {
     pixels: string
 }
 
+type PollInfo = {
+    updates: BigNumber;
+    balance: BigNumber;
+    supply: BigNumber;
+    upline: string;
+    downline: {
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+    }
+}
+
 function cleanURI(uri: string) {
     if (!uri) { return "" }
     let a = document.createElement("A") as HTMLAnchorElement
@@ -280,23 +337,23 @@ export default defineComponent({
             type: Object as PropType<ProviderInfo>,
             required: true,
         },
+        referrer: String
     },
     data(): { 
             loading: boolean,
-            lockTimeStamp: number, pixelBalance: BigNumber, pixelTotalSupply: BigNumber, blocks: Block[], updateIndex: number, pixel: string, 
+            lockTimeStamp: number, matic: ethers.providers.JsonRpcProvider | null, blocks: Block[], pollInfo: PollInfo | null, updateIndex: number, 
             buying: boolean, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, mouseBelowHalf: boolean, mx: number, my: number,
             selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, 
             blockNumbers: number[], pixels: string[], cost: number, duplicateBlocks: number, url: string, description: string, now: number } {
         return {
             loading: false,
             lockTimeStamp: 0,
-            pixelBalance: BigNumber.from(0),
-            pixelTotalSupply: BigNumber.from(0),
 
+            matic: null,
             blocks: [],
+            pollInfo: null,
             updateIndex: 0,
 
-            pixel: "",
             canvas: null,
 
             mouseBelowHalf: false,
@@ -321,8 +378,6 @@ export default defineComponent({
         }
     },
     async created() {
-        //this.pixel = PixelDeployment.address
-        this.pixel = "0x81DB9C598b3ebbdC92426422fc0A1d06E77195ec"
         setInterval(() => this.now = Date.now(), 1000);
 
         let dataStr = localStorage.getItem("data")
@@ -357,8 +412,17 @@ export default defineComponent({
                 })
             }
         }
+
+        let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0]);
+        provider.on("block", (blockNumber: number) => {
+            this.newBlock(blockNumber)
+        })
+        let p = PixelFactory.connect(constants.pixel, provider)
+        this.lockTimeStamp = (await p.LOCK_TIMESTAMP()).toNumber()
     },
     computed: {
+        chainName() { return constants.network.chainName },
+        contractAddress() { return constants.pixel },
         selectionStyle() {
             let style = "position: absolute; pointer-events: none;"
             style += this.selecting || this.selected ? "" : "display: none;"
@@ -379,7 +443,7 @@ export default defineComponent({
             }
             return style
         },
-        wrongNetwork(): boolean { return this.info.chainId != 80001 },
+        wrongNetwork(): boolean { return this.info.chainId != constants.chainId },
         tooltip(): boolean { return this.mx != -1 && !this.buying },
         tooltipBlock(): Block | null { return this.tooltip && this.blocks.length == 10000 ? this.blocks[Math.floor(this.my / 10) * 100 + Math.floor(this.mx / 10)] : null},
         tooltipStyle(): string {
@@ -397,28 +461,42 @@ export default defineComponent({
         lockDiffHours(): number { return Math.floor(this.lockDiff / (60 * 60 * 1000)) % 24 },
         lockDiffMinutes(): number { return Math.floor(this.lockDiff / (60 * 1000)) % 60 },
         lockDiffSeconds(): number { return Math.floor(this.lockDiff / (1000)) % 60 },
+        referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero }
     },
-    watch: {
-        "info.block": async function() {
-            console.log("Block", this.info.block)
+    methods: {
+        async switchToNetwork() {
+            await window.ethereum.request({method: 'wallet_addEthereumChain', params: [constants.network]})
+        },
+        async newBlock(blockNumber: number) {
+            console.log("Block", blockNumber)
             let ctx = this.canvas?.getContext("2d")
             if (window.provider && this.info.address && ctx) {
-                const signer = window.provider?.getSigner(this.info.address)
-                let p = PixelFactory.connect(this.pixel, signer)
+                let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0]);
+                let p = PixelFactory.connect(constants.pixel, provider)
 
-                if (!this.lockTimeStamp) {
-                    this.lockTimeStamp = (await p.lockTimestamp()).toNumber()
+                let pollInfo = await p.poll(this.info.address || ethers.constants.AddressZero)
+                this.pollInfo = {
+                    updates: pollInfo.updates_,
+                    balance: pollInfo.balance,
+                    supply: pollInfo.supply,
+                    downline: {
+                        tier1: pollInfo.downline_.tier1,
+                        tier2: pollInfo.downline_.tier2,
+                        tier3: pollInfo.downline_.tier3,
+                        earnings1: pollInfo.downline_.earnings1,
+                        earnings2: pollInfo.downline_.earnings2,
+                        earnings3: pollInfo.downline_.earnings3
+                    },
+                    upline: pollInfo.upline_
                 }
+                console.log(this.pollInfo)
 
-                this.pixelBalance = await p.balanceOf(this.info.address)
-                this.pixelTotalSupply = await p.totalSupply()
-
-                let currentUpdatesCount = await p.updatesCount()
-                while (currentUpdatesCount.toNumber() > this.updateIndex) {
+                let currentUpdatesCount = this.pollInfo.updates.toNumber()
+                while (currentUpdatesCount > this.updateIndex) {
                     this.loading = true
-                    console.log("Getting", this.updateIndex, currentUpdatesCount.toNumber())
+                    console.log("Getting", this.updateIndex, currentUpdatesCount)
                     let updates = [...new Set((await p.getUpdates(this.updateIndex, 1000)).map(bn => bn.toNumber()))]
-                    this.updateIndex = currentUpdatesCount.toNumber() - this.updateIndex > 1000 ? this.updateIndex + 1000 : currentUpdatesCount.toNumber()
+                    this.updateIndex = currentUpdatesCount - this.updateIndex > 1000 ? this.updateIndex + 1000 : currentUpdatesCount
                     while (updates.length) {
                         console.log(updates.length, "left")
                         let updatedBlocks = await p.getBlocks(updates.splice(0, 200))
@@ -456,27 +534,6 @@ export default defineComponent({
                 }
                 this.loading = false
             }
-        }
-    },
-    methods: {
-        async gotoPolygon() {
-            let ethereum = window.ethereum;
-            const data = [{
-                chainId: "0x13881",
-                chainName: 'Mumbai (Polygon Testnet)',
-                nativeCurrency:
-                    {
-                        name: 'MATIC',
-                        symbol: 'MATIC',
-                        decimals: 18
-                    },
-                rpcUrls: ['https://rpc-mumbai.maticvigil.com/'],
-                blockExplorerUrls: ['https://mumbai.polygonscan.com/'],
-            }]
-            const tx = await ethereum.request({method: 'wallet_addEthereumChain', params:data}).catch()
-            if (tx) {
-                console.log(tx)
-            }
         },
         async buy() {
             this.image = null
@@ -484,12 +541,12 @@ export default defineComponent({
             this.buying = false
             if (window.provider) {
                 const signer = window.provider?.getSigner(this.info.address)
-                let p = PixelFactory.connect(this.pixel, signer)
+                let p = PixelFactory.connect(constants.pixel, signer)
                 for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
                     let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
                     let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
                     let cost = await p["getCost(uint256[])"](blockNumbers)
-                    p["setBlocks(uint256[],string,string,bytes[])"](blockNumbers, this.url, this.description, pixels, { value: cost, gasPrice: 1000000000 })
+                    p["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, this.referrerClean || ethers.constants.AddressZero, { value: cost })
                 }
             }
         },
@@ -530,14 +587,14 @@ export default defineComponent({
         async withdraw() {
             if (window.provider) {
                 const signer = window.provider?.getSigner(this.info.address)
-                let p = PixelFactory.connect(this.pixel, signer)
+                let p = PixelFactory.connect(constants.pixel, signer)
                 await p.withdraw(ethers.constants.AddressZero)
             }
         },
         async mint() {
             if (window.provider) {
                 const signer = window.provider?.getSigner(this.info.address)
-                let p = PixelFactory.connect(this.pixel, signer)
+                let p = PixelFactory.connect(constants.pixel, signer)
                 await p.mintCanvas()
             }
         },
@@ -635,7 +692,7 @@ export default defineComponent({
 
                         if (window.provider) {
                             const signer = window.provider?.getSigner(self.info.address)
-                            let p = PixelFactory.connect(self.pixel, signer)
+                            let p = PixelFactory.connect(constants.pixel, signer)
                             self.cost = (await p["getCost(uint256[])"](self.blockNumbers)).div("10000000000000000").toNumber() / 100
                         }
                     } else {

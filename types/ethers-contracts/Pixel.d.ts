@@ -24,6 +24,8 @@ import { FunctionFragment, EventFragment, Result } from "@ethersproject/abi";
 interface PixelInterface extends ethers.utils.Interface {
   functions: {
     "DOMAIN_SEPARATOR()": FunctionFragment;
+    "LOCK_TIMESTAMP()": FunctionFragment;
+    "START_TIMESTAMP()": FunctionFragment;
     "allowance(address,address)": FunctionFragment;
     "approve(address,uint256)": FunctionFragment;
     "balanceOf(address)": FunctionFragment;
@@ -32,11 +34,11 @@ interface PixelInterface extends ethers.utils.Interface {
     "canvas()": FunctionFragment;
     "claimOwnership()": FunctionFragment;
     "decimals()": FunctionFragment;
+    "downline(address)": FunctionFragment;
     "getBlocks(uint256[])": FunctionFragment;
     "getCost(uint256)": FunctionFragment;
     "getUpdates(uint256,uint256)": FunctionFragment;
     "link(uint256)": FunctionFragment;
-    "lockTimestamp()": FunctionFragment;
     "mintCanvas()": FunctionFragment;
     "name()": FunctionFragment;
     "nonces(address)": FunctionFragment;
@@ -44,7 +46,8 @@ interface PixelInterface extends ethers.utils.Interface {
     "pendingOwner()": FunctionFragment;
     "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)": FunctionFragment;
     "permitToken(address,address,address,uint256,uint256,uint8,bytes32,bytes32)": FunctionFragment;
-    "setBlocks(uint256[],uint32,bytes[])": FunctionFragment;
+    "poll(address)": FunctionFragment;
+    "setBlocks(uint256[],uint32,bytes[],address)": FunctionFragment;
     "symbol()": FunctionFragment;
     "totalSupply()": FunctionFragment;
     "transfer(address,uint256)": FunctionFragment;
@@ -52,11 +55,20 @@ interface PixelInterface extends ethers.utils.Interface {
     "transferOwnership(address,bool,bool)": FunctionFragment;
     "updates(uint256)": FunctionFragment;
     "updatesCount()": FunctionFragment;
+    "upline(address)": FunctionFragment;
     "withdraw(address)": FunctionFragment;
   };
 
   encodeFunctionData(
     functionFragment: "DOMAIN_SEPARATOR",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "LOCK_TIMESTAMP",
+    values?: undefined
+  ): string;
+  encodeFunctionData(
+    functionFragment: "START_TIMESTAMP",
     values?: undefined
   ): string;
   encodeFunctionData(
@@ -79,6 +91,7 @@ interface PixelInterface extends ethers.utils.Interface {
     values?: undefined
   ): string;
   encodeFunctionData(functionFragment: "decimals", values?: undefined): string;
+  encodeFunctionData(functionFragment: "downline", values: [string]): string;
   encodeFunctionData(
     functionFragment: "getBlocks",
     values: [BigNumberish[]]
@@ -92,10 +105,6 @@ interface PixelInterface extends ethers.utils.Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "link", values: [BigNumberish]): string;
-  encodeFunctionData(
-    functionFragment: "lockTimestamp",
-    values?: undefined
-  ): string;
   encodeFunctionData(
     functionFragment: "mintCanvas",
     values?: undefined
@@ -132,9 +141,10 @@ interface PixelInterface extends ethers.utils.Interface {
       BytesLike
     ]
   ): string;
+  encodeFunctionData(functionFragment: "poll", values: [string]): string;
   encodeFunctionData(
     functionFragment: "setBlocks",
-    values: [BigNumberish[], BigNumberish, BytesLike[]]
+    values: [BigNumberish[], BigNumberish, BytesLike[], string]
   ): string;
   encodeFunctionData(functionFragment: "symbol", values?: undefined): string;
   encodeFunctionData(
@@ -161,10 +171,19 @@ interface PixelInterface extends ethers.utils.Interface {
     functionFragment: "updatesCount",
     values?: undefined
   ): string;
+  encodeFunctionData(functionFragment: "upline", values: [string]): string;
   encodeFunctionData(functionFragment: "withdraw", values: [string]): string;
 
   decodeFunctionResult(
     functionFragment: "DOMAIN_SEPARATOR",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "LOCK_TIMESTAMP",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "START_TIMESTAMP",
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "allowance", data: BytesLike): Result;
@@ -178,14 +197,11 @@ interface PixelInterface extends ethers.utils.Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "decimals", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "downline", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getBlocks", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getCost", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "getUpdates", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "link", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "lockTimestamp",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "mintCanvas", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "nonces", data: BytesLike): Result;
@@ -199,6 +215,7 @@ interface PixelInterface extends ethers.utils.Interface {
     functionFragment: "permitToken",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "poll", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "setBlocks", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "symbol", data: BytesLike): Result;
   decodeFunctionResult(
@@ -219,15 +236,20 @@ interface PixelInterface extends ethers.utils.Interface {
     functionFragment: "updatesCount",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "upline", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
 
   events: {
     "Approval(address,address,uint256)": EventFragment;
+    "MLMAddRep(address,address)": EventFragment;
+    "MLMEarn(address,uint128,uint8)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "MLMAddRep"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "MLMEarn"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
 }
@@ -252,6 +274,22 @@ export class Pixel extends Contract {
 
     "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<{
       0: string;
+    }>;
+
+    LOCK_TIMESTAMP(overrides?: CallOverrides): Promise<{
+      0: BigNumber;
+    }>;
+
+    "LOCK_TIMESTAMP()"(overrides?: CallOverrides): Promise<{
+      0: BigNumber;
+    }>;
+
+    START_TIMESTAMP(overrides?: CallOverrides): Promise<{
+      0: BigNumber;
+    }>;
+
+    "START_TIMESTAMP()"(overrides?: CallOverrides): Promise<{
+      0: BigNumber;
     }>;
 
     allowance(
@@ -356,6 +394,42 @@ export class Pixel extends Contract {
       0: number;
     }>;
 
+    downline(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    }>;
+
+    "downline(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    }>;
+
     getBlocks(
       blockNumbers: BigNumberish[],
       overrides?: CallOverrides
@@ -476,14 +550,6 @@ export class Pixel extends Contract {
       description: string;
       0: string;
       1: string;
-    }>;
-
-    lockTimestamp(overrides?: CallOverrides): Promise<{
-      0: BigNumber;
-    }>;
-
-    "lockTimestamp()"(overrides?: CallOverrides): Promise<{
-      0: BigNumber;
     }>;
 
     mintCanvas(overrides?: Overrides): Promise<ContractTransaction>;
@@ -574,18 +640,104 @@ export class Pixel extends Contract {
       overrides?: Overrides
     ): Promise<ContractTransaction>;
 
-    "setBlocks(uint256[],uint32,bytes[])"(
+    poll(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      updates_: BigNumber;
+      balance: BigNumber;
+      supply: BigNumber;
+      upline_: string;
+      downline_: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: string;
+      4: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+    }>;
+
+    "poll(address)"(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      updates_: BigNumber;
+      balance: BigNumber;
+      supply: BigNumber;
+      upline_: string;
+      downline_: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: string;
+      4: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+    }>;
+
+    "setBlocks(uint256[],uint32,bytes[],address)"(
       blockNumbers: BigNumberish[],
       linkNumber: BigNumberish,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: PayableOverrides
     ): Promise<ContractTransaction>;
 
-    "setBlocks(uint256[],string,string,bytes[])"(
+    "setBlocks(uint256[],string,string,bytes[],address)"(
       blockNumbers: BigNumberish[],
       url: string,
       description: string,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: PayableOverrides
     ): Promise<ContractTransaction>;
 
@@ -667,6 +819,20 @@ export class Pixel extends Contract {
       0: BigNumber;
     }>;
 
+    upline(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      0: string;
+    }>;
+
+    "upline(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      0: string;
+    }>;
+
     withdraw(
       token: string,
       overrides?: Overrides
@@ -681,6 +847,14 @@ export class Pixel extends Contract {
   DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
 
   "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
+
+  LOCK_TIMESTAMP(overrides?: CallOverrides): Promise<BigNumber>;
+
+  "LOCK_TIMESTAMP()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+  START_TIMESTAMP(overrides?: CallOverrides): Promise<BigNumber>;
+
+  "START_TIMESTAMP()"(overrides?: CallOverrides): Promise<BigNumber>;
 
   allowance(
     arg0: string,
@@ -765,6 +939,42 @@ export class Pixel extends Contract {
 
   "decimals()"(overrides?: CallOverrides): Promise<number>;
 
+  downline(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<{
+    earnings1: BigNumber;
+    earnings2: BigNumber;
+    earnings3: BigNumber;
+    tier1: number;
+    tier2: number;
+    tier3: number;
+    0: BigNumber;
+    1: BigNumber;
+    2: BigNumber;
+    3: number;
+    4: number;
+    5: number;
+  }>;
+
+  "downline(address)"(
+    arg0: string,
+    overrides?: CallOverrides
+  ): Promise<{
+    earnings1: BigNumber;
+    earnings2: BigNumber;
+    earnings3: BigNumber;
+    tier1: number;
+    tier2: number;
+    tier3: number;
+    0: BigNumber;
+    1: BigNumber;
+    2: BigNumber;
+    3: number;
+    4: number;
+    5: number;
+  }>;
+
   getBlocks(
     blockNumbers: BigNumberish[],
     overrides?: CallOverrides
@@ -847,10 +1057,6 @@ export class Pixel extends Contract {
     1: string;
   }>;
 
-  lockTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
-
-  "lockTimestamp()"(overrides?: CallOverrides): Promise<BigNumber>;
-
   mintCanvas(overrides?: Overrides): Promise<ContractTransaction>;
 
   "mintCanvas()"(overrides?: Overrides): Promise<ContractTransaction>;
@@ -920,18 +1126,104 @@ export class Pixel extends Contract {
     overrides?: Overrides
   ): Promise<ContractTransaction>;
 
-  "setBlocks(uint256[],uint32,bytes[])"(
+  poll(
+    user: string,
+    overrides?: CallOverrides
+  ): Promise<{
+    updates_: BigNumber;
+    balance: BigNumber;
+    supply: BigNumber;
+    upline_: string;
+    downline_: {
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    };
+    0: BigNumber;
+    1: BigNumber;
+    2: BigNumber;
+    3: string;
+    4: {
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    };
+  }>;
+
+  "poll(address)"(
+    user: string,
+    overrides?: CallOverrides
+  ): Promise<{
+    updates_: BigNumber;
+    balance: BigNumber;
+    supply: BigNumber;
+    upline_: string;
+    downline_: {
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    };
+    0: BigNumber;
+    1: BigNumber;
+    2: BigNumber;
+    3: string;
+    4: {
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    };
+  }>;
+
+  "setBlocks(uint256[],uint32,bytes[],address)"(
     blockNumbers: BigNumberish[],
     linkNumber: BigNumberish,
     pixels: BytesLike[],
+    referrer: string,
     overrides?: PayableOverrides
   ): Promise<ContractTransaction>;
 
-  "setBlocks(uint256[],string,string,bytes[])"(
+  "setBlocks(uint256[],string,string,bytes[],address)"(
     blockNumbers: BigNumberish[],
     url: string,
     description: string,
     pixels: BytesLike[],
+    referrer: string,
     overrides?: PayableOverrides
   ): Promise<ContractTransaction>;
 
@@ -994,6 +1286,10 @@ export class Pixel extends Contract {
 
   "updatesCount()"(overrides?: CallOverrides): Promise<BigNumber>;
 
+  upline(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+  "upline(address)"(arg0: string, overrides?: CallOverrides): Promise<string>;
+
   withdraw(token: string, overrides?: Overrides): Promise<ContractTransaction>;
 
   "withdraw(address)"(
@@ -1005,6 +1301,14 @@ export class Pixel extends Contract {
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<string>;
 
     "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<string>;
+
+    LOCK_TIMESTAMP(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "LOCK_TIMESTAMP()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    START_TIMESTAMP(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "START_TIMESTAMP()"(overrides?: CallOverrides): Promise<BigNumber>;
 
     allowance(
       arg0: string,
@@ -1089,6 +1393,42 @@ export class Pixel extends Contract {
 
     "decimals()"(overrides?: CallOverrides): Promise<number>;
 
+    downline(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    }>;
+
+    "downline(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      earnings1: BigNumber;
+      earnings2: BigNumber;
+      earnings3: BigNumber;
+      tier1: number;
+      tier2: number;
+      tier3: number;
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: number;
+      4: number;
+      5: number;
+    }>;
+
     getBlocks(
       blockNumbers: BigNumberish[],
       overrides?: CallOverrides
@@ -1171,10 +1511,6 @@ export class Pixel extends Contract {
       1: string;
     }>;
 
-    lockTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
-
-    "lockTimestamp()"(overrides?: CallOverrides): Promise<BigNumber>;
-
     mintCanvas(overrides?: CallOverrides): Promise<void>;
 
     "mintCanvas()"(overrides?: CallOverrides): Promise<void>;
@@ -1244,18 +1580,104 @@ export class Pixel extends Contract {
       overrides?: CallOverrides
     ): Promise<void>;
 
-    "setBlocks(uint256[],uint32,bytes[])"(
+    poll(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      updates_: BigNumber;
+      balance: BigNumber;
+      supply: BigNumber;
+      upline_: string;
+      downline_: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: string;
+      4: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+    }>;
+
+    "poll(address)"(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<{
+      updates_: BigNumber;
+      balance: BigNumber;
+      supply: BigNumber;
+      upline_: string;
+      downline_: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+      0: BigNumber;
+      1: BigNumber;
+      2: BigNumber;
+      3: string;
+      4: {
+        earnings1: BigNumber;
+        earnings2: BigNumber;
+        earnings3: BigNumber;
+        tier1: number;
+        tier2: number;
+        tier3: number;
+        0: BigNumber;
+        1: BigNumber;
+        2: BigNumber;
+        3: number;
+        4: number;
+        5: number;
+      };
+    }>;
+
+    "setBlocks(uint256[],uint32,bytes[],address)"(
       blockNumbers: BigNumberish[],
       linkNumber: BigNumberish,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: CallOverrides
     ): Promise<void>;
 
-    "setBlocks(uint256[],string,string,bytes[])"(
+    "setBlocks(uint256[],string,string,bytes[],address)"(
       blockNumbers: BigNumberish[],
       url: string,
       description: string,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: CallOverrides
     ): Promise<number>;
 
@@ -1318,6 +1740,10 @@ export class Pixel extends Contract {
 
     "updatesCount()"(overrides?: CallOverrides): Promise<BigNumber>;
 
+    upline(arg0: string, overrides?: CallOverrides): Promise<string>;
+
+    "upline(address)"(arg0: string, overrides?: CallOverrides): Promise<string>;
+
     withdraw(token: string, overrides?: CallOverrides): Promise<void>;
 
     "withdraw(address)"(
@@ -1332,6 +1758,10 @@ export class Pixel extends Contract {
       _spender: string | null,
       _value: null
     ): EventFilter;
+
+    MLMAddRep(rep: null, upline: null): EventFilter;
+
+    MLMEarn(rep: null, amount: null, lvl: null): EventFilter;
 
     OwnershipTransferred(
       previousOwner: string | null,
@@ -1349,6 +1779,14 @@ export class Pixel extends Contract {
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<BigNumber>;
 
     "DOMAIN_SEPARATOR()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    LOCK_TIMESTAMP(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "LOCK_TIMESTAMP()"(overrides?: CallOverrides): Promise<BigNumber>;
+
+    START_TIMESTAMP(overrides?: CallOverrides): Promise<BigNumber>;
+
+    "START_TIMESTAMP()"(overrides?: CallOverrides): Promise<BigNumber>;
 
     allowance(
       arg0: string,
@@ -1412,6 +1850,13 @@ export class Pixel extends Contract {
 
     "decimals()"(overrides?: CallOverrides): Promise<BigNumber>;
 
+    downline(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    "downline(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     getBlocks(
       blockNumbers: BigNumberish[],
       overrides?: CallOverrides
@@ -1450,10 +1895,6 @@ export class Pixel extends Contract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<BigNumber>;
-
-    lockTimestamp(overrides?: CallOverrides): Promise<BigNumber>;
-
-    "lockTimestamp()"(overrides?: CallOverrides): Promise<BigNumber>;
 
     mintCanvas(overrides?: Overrides): Promise<BigNumber>;
 
@@ -1524,18 +1965,27 @@ export class Pixel extends Contract {
       overrides?: Overrides
     ): Promise<BigNumber>;
 
-    "setBlocks(uint256[],uint32,bytes[])"(
+    poll(user: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    "poll(address)"(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    "setBlocks(uint256[],uint32,bytes[],address)"(
       blockNumbers: BigNumberish[],
       linkNumber: BigNumberish,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: PayableOverrides
     ): Promise<BigNumber>;
 
-    "setBlocks(uint256[],string,string,bytes[])"(
+    "setBlocks(uint256[],string,string,bytes[],address)"(
       blockNumbers: BigNumberish[],
       url: string,
       description: string,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: PayableOverrides
     ): Promise<BigNumber>;
 
@@ -1598,6 +2048,13 @@ export class Pixel extends Contract {
 
     "updatesCount()"(overrides?: CallOverrides): Promise<BigNumber>;
 
+    upline(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
+
+    "upline(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
     withdraw(token: string, overrides?: Overrides): Promise<BigNumber>;
 
     "withdraw(address)"(
@@ -1610,6 +2067,18 @@ export class Pixel extends Contract {
     DOMAIN_SEPARATOR(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     "DOMAIN_SEPARATOR()"(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    LOCK_TIMESTAMP(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "LOCK_TIMESTAMP()"(
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    START_TIMESTAMP(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    "START_TIMESTAMP()"(
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -1681,6 +2150,16 @@ export class Pixel extends Contract {
 
     "decimals()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    downline(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "downline(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     getBlocks(
       blockNumbers: BigNumberish[],
       overrides?: CallOverrides
@@ -1722,10 +2201,6 @@ export class Pixel extends Contract {
       arg0: BigNumberish,
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
-
-    lockTimestamp(overrides?: CallOverrides): Promise<PopulatedTransaction>;
-
-    "lockTimestamp()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     mintCanvas(overrides?: Overrides): Promise<PopulatedTransaction>;
 
@@ -1799,18 +2274,30 @@ export class Pixel extends Contract {
       overrides?: Overrides
     ): Promise<PopulatedTransaction>;
 
-    "setBlocks(uint256[],uint32,bytes[])"(
+    poll(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "poll(address)"(
+      user: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "setBlocks(uint256[],uint32,bytes[],address)"(
       blockNumbers: BigNumberish[],
       linkNumber: BigNumberish,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: PayableOverrides
     ): Promise<PopulatedTransaction>;
 
-    "setBlocks(uint256[],string,string,bytes[])"(
+    "setBlocks(uint256[],string,string,bytes[],address)"(
       blockNumbers: BigNumberish[],
       url: string,
       description: string,
       pixels: BytesLike[],
+      referrer: string,
       overrides?: PayableOverrides
     ): Promise<PopulatedTransaction>;
 
@@ -1875,6 +2362,16 @@ export class Pixel extends Contract {
     updatesCount(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     "updatesCount()"(overrides?: CallOverrides): Promise<PopulatedTransaction>;
+
+    upline(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    "upline(address)"(
+      arg0: string,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
 
     withdraw(
       token: string,

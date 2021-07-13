@@ -173,7 +173,60 @@ contract Canvas {
     }
 }
 
-contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
+// Simple Multi Level Marketing contract with 3 tiers
+contract MLM {
+    struct DownlineStats {
+        uint128 earnings1;
+        uint128 earnings2;
+        uint128 earnings3;
+        uint32 tier1;
+        uint32 tier2;
+        uint32 tier3;
+    }
+    mapping (address => address) public upline;
+    mapping (address => DownlineStats) public downline;
+
+    event MLMAddRep(address rep, address upline);
+    event MLMEarn(address rep, uint128 amount, uint8 lvl);
+
+    function _addRep(address rep, address upline_) internal {
+        if (upline_ == address(0) || upline[rep] != address(0)) { return; }
+        require(rep != upline_, "MLM: Can't refer yourself");
+        upline[rep] = upline_;
+        (address lvl1, address lvl2, address lvl3) = _getUpline(rep);
+        if (lvl1 != address(0)) { downline[lvl1].tier1++; }
+        if (lvl2 != address(0)) { downline[lvl2].tier2++; }
+        if (lvl3 != address(0)) { downline[lvl3].tier3++; }
+        emit MLMAddRep(rep, upline_);
+    }
+
+    function _getUpline(address rep) internal view returns (address lvl1, address lvl2, address lvl3) {
+        lvl1 = upline[rep];
+        if (lvl1 != address(0)) {
+            lvl2 = upline[lvl1];
+            if (lvl2 != address(0)) {
+                lvl3 = upline[lvl2];
+            }
+        }
+    }
+
+    function _recordEarnings(address lvl1, address lvl2, address lvl3, uint128 earnings1, uint128 earnings2, uint128 earnings3) internal {
+        if (lvl1 != address(0)) {
+            downline[lvl1].earnings1 += earnings1;
+            emit MLMEarn(lvl1, earnings1, 1);
+        }
+        if (lvl2 != address(0)) {
+            downline[lvl2].earnings2 += earnings2;
+            emit MLMEarn(lvl2, earnings1, 2);
+        }
+        if (lvl3 != address(0)) {
+            downline[lvl3].earnings3 += earnings3;
+            emit MLMEarn(lvl3, earnings1, 3);
+        }
+    }
+}
+
+contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
 
@@ -208,7 +261,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     BlockLink[] public link;
     // data is organized in blocks of 10x10. There are 100x100 blocks. Base is 0 and counting goes left to right, then top to bottom.
     Block[10000] public blk;
-    uint256 public constant START_TIMESTAMP = 1626368400;
+    uint256 public constant START_TIMESTAMP = 1626171001;//1626368400;
     uint256 public constant LOCK_TIMESTAMP = START_TIMESTAMP + 2 weeks;
     uint256[] public updates;
 
@@ -231,7 +284,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     }
 
     modifier onlyCreationPhase() {
-        require(block.timestamp >= START_TIMESTAMP && block.timestamp < LOCK_TIMESTAMP);
+        require(block.timestamp >= START_TIMESTAMP && block.timestamp < LOCK_TIMESTAMP, "Not in creation phase");
         _;
     }
 
@@ -267,7 +320,8 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
     function setBlocks(
         uint256[] calldata blockNumbers,
         uint32 linkNumber,
-        bytes[] calldata pixels
+        bytes[] calldata pixels,
+        address referrer
     ) public payable onlyCreationPhase() {
         // This error may happen when you calculate the correct cost, but someone buys one of your blocks before your transaction goes through
         // This is tested first to reduce wasted gas in case of failure
@@ -279,6 +333,8 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
             (bool success, ) = msg.sender.call{value: refund}("");
             require(success, "Pixel: refund failed");
         }
+
+        _addRep(msg.sender, referrer);
 
         for (uint256 i = 0; i < blockNumbers.length; i++) {
             uint256 blockNumber = blockNumbers[i];
@@ -297,14 +353,21 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         }
 
         // Mint a PIXEL token for each pixel bought
-        _mint(msg.sender, blockNumbers.length.mul(1e20));
+        uint256 blocks = blockNumbers.length;
+        _mint(msg.sender, blocks.mul(1e20));
+        (address lvl1, address lvl2, address lvl3) = _getUpline(msg.sender);
+        if (lvl1 != address(0)) { _mint(lvl1, blocks.mul(20e18)); }
+        if (lvl2 != address(0)) { _mint(lvl2, blocks.mul(10e18)); }
+        if (lvl3 != address(0)) { _mint(lvl3, blocks.mul(5e18)); }
+        _recordEarnings(lvl1, lvl2, lvl3, blocks.mul(20e18).to128(), blocks.mul(10e18).to128(), blocks.mul(5e18).to128());
     }
 
     function setBlocks(
         uint256[] calldata blockNumbers,
         string calldata url,
         string calldata description,
-        bytes[] calldata pixels
+        bytes[] calldata pixels,
+        address referrer
     ) public payable onlyCreationPhase() returns (uint32 linkNumber) {
         BlockLink memory newLink;
         newLink.url = url;
@@ -312,7 +375,7 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
         linkNumber = link.length.to32();
         link.push(newLink);
 
-        setBlocks(blockNumbers, linkNumber, pixels);
+        setBlocks(blockNumbers, linkNumber, pixels, referrer);
     }
 
     function getCost(uint256 blockNumber) public view returns (uint256 cost) {
@@ -335,6 +398,14 @@ contract Pixel is ERC20WithSupply, BoringOwnable, BoringBatchable {
             bool success;
             (success, ) = owner.call{value: address(this).balance}("");
         }
+    }
+
+    function poll(address user) public view returns (uint256 updates_, uint256 balance, uint256 supply, address upline_, DownlineStats memory downline_) {
+        updates_ = updates.length;
+        balance = balanceOf[user];
+        supply = totalSupply;
+        upline_ = upline[user];
+        downline_ = downline[user];
     }
 
     // Receive funds from NFT sales for all PIXEL holders
