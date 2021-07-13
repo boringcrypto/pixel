@@ -232,6 +232,8 @@
 </template>
 
 <script lang="ts">
+// Hi there! Thanks for reading the code... it's a mess, put together quickly. Enjoy and good luck!
+// - BoringCrypto (https://twitter.com/Boring_Crypto)
 import {defineComponent, PropType} from "@vue/runtime-core"
 import {ProviderInfo} from "../components/Web3.vue"
 import * as Cache from "../cache.json"
@@ -407,10 +409,14 @@ export default defineComponent({
 
         let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0]);
         provider.on("block", (blockNumber: number) => {
-            this.newBlock(blockNumber)
+            if (blockNumber % 10 == 0) { // Only update once every 10 blocks     
+                console.log("Block", blockNumber)
+                this.newBlock()
+            }
         })
         let p = PixelFactory.connect(constants.pixel, provider)
         this.lockTimeStamp = (await p.LOCK_TIMESTAMP()).toNumber()
+        this.newBlock()
     },
     computed: {
         chainName() { return constants.network.chainName },
@@ -459,8 +465,7 @@ export default defineComponent({
         async switchToNetwork() {
             await window.ethereum.request({method: 'wallet_addEthereumChain', params: [constants.network]})
         },
-        async newBlock(blockNumber: number) {
-            console.log("Block", blockNumber)
+        async newBlock() {
             let ctx = this.canvas?.getContext("2d")
             if (window.provider && this.info.address && ctx) {
                 let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0]);
