@@ -227,7 +227,7 @@
     </table>
     
     PIXEL address is <a :href="contractURL" target="_blank">{{ contractAddress }}</a><br>Contracts are NOT audited.<br>
-    All data is stored on-chain. Website is <a :href="'https://k51qzi5uqu5djfpuv5xum9zgp22h61hr9x1cur1vkncsohclupyiafrudbt6pt.ipns.dweb.link/?ref=' + referrer">hosted on IPFS</a>.
+    All data is stored on-chain. Website is <a :href="'https://pixelinc.eth.link/?ref=' + referrer">hosted on IPFS</a>.
     <br>
     <img src="../assets/underconstruction.gif">
     <br>
