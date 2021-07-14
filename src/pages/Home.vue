@@ -185,25 +185,6 @@
 
     <table style="width: 1004px; margin: auto; border-spacing: 0;">
         <tr>
-            <td style="text-align: left; vertical-align: top; padding-top: 10px;">
-                <a href="https://twitter.com/Boring_Crypto" target="_blank"><img src="../assets/social_twitter.svg" height="32" style="padding-right: 10px"></a>
-                <a href="https://icq.im/760436916" target="_blank"><img src="../assets/icq.png" height="32" style="padding-right: 10px"></a>
-                <a href="https://boringcrypto.medium.com/pixel-inc-artvertising-nft-1c1ddaa16f32" target="_blank"><img src="../assets/social_medium.svg" height="32" style="padding-right: 10px"></a>
-                <a href="https://discord.gg/KE9R3GYJ" target="_blank"><img src="../assets/social_discord.svg" height="32" style="padding-right: 10px"></a>
-                <a href="https://github.com/boringcrypto/pixel" target="_blank"><img src="../assets/social_github.svg" height="32" style="padding-right: 10px"></a>
-            </td>
-            <td style="padding-top: 10px">
-                <img style="float: right" src="../assets/tom.jpg" height="80">
-                <p style="text-align: right; padding-right: 100px">
-                    <span style="color: rgb(55, 94, 165)">
-                        "Some of my best friends<br>
-                        are made of pixels"<br>
-                    </span>
-                    <strong>- Tom</strong>
-                </p>
-            </td>
-        </tr>
-        <tr>
             <td style="vertical-align: top; padding-top: 20px">
                 <div style="width: 480px; background-color: #ccc; color: black; border: 1px solid rgb(169, 216,235);">
                     <img src="../assets/ambassador.svg" style="height: 160px; margin: -24px" /><br>
@@ -238,9 +219,16 @@
                         </tbody>
                     </table>
                     <br>
-                    Your ambassador link is:<br>
+                    Your ambassador link:<br>
                     https://pixel.inc/?ref={{ info.address }}<br>
                     <br>
+                </div>
+                <div style="text-align: left; vertical-align: top; padding-top: 10px;">
+                    <a href="https://twitter.com/Boring_Crypto" target="_blank"><img src="../assets/social_twitter.svg" height="32" style="padding-right: 10px"></a>
+                    <a href="https://icq.im/760436916" target="_blank"><img src="../assets/icq.png" height="32" style="padding-right: 10px"></a>
+                    <a href="https://boringcrypto.medium.com/pixel-inc-artvertising-nft-1c1ddaa16f32" target="_blank"><img src="../assets/social_medium.svg" height="32" style="padding-right: 10px"></a>
+                    <a href="https://discord.gg/KE9R3GYJ" target="_blank"><img src="../assets/social_discord.svg" height="32" style="padding-right: 10px"></a>
+                    <a href="https://github.com/boringcrypto/pixel" target="_blank"><img src="../assets/social_github.svg" height="32" style="padding-right: 10px"></a>
                 </div>
             </td>
             <td style="vertical-align: top; padding-top: 20px">
@@ -263,6 +251,16 @@
                         </div>
                     </div>
                     <br>
+                </div>
+                <div style="padding-top: 10px">
+                    <img style="float: right" src="../assets/tom.jpg" height="80">
+                    <p style="text-align: right; padding-right: 100px">
+                        <span style="color: rgb(55, 94, 165)">
+                            "Some of my best friends<br>
+                            are made of pixels"<br>
+                        </span>
+                        <strong>- Tom</strong>
+                    </p>
                 </div>
             </td>
         </tr>
