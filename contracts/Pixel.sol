@@ -194,8 +194,8 @@ contract MLM {
         require(rep != upline_, "MLM: Can't refer yourself");
         upline[rep] = upline_;
         (address lvl1, address lvl2, address lvl3) = _getUpline(rep);
-        if (lvl1 != address(0)) { downline[lvl1].tier1++; }
-        if (lvl2 != address(0)) { downline[lvl2].tier2++; }
+        if (lvl1 != address(0)) { downline[lvl1].tier1++; downline[lvl1].tier2 += downline[rep].tier1; downline[lvl1].tier2 += downline[rep].tier3; }
+        if (lvl2 != address(0)) { downline[lvl2].tier2++; downline[lvl2].tier2 += downline[rep].tier3; }
         if (lvl3 != address(0)) { downline[lvl3].tier3++; }
         emit MLMAddRep(rep, upline_);
     }

@@ -10,7 +10,6 @@
     .upload-button {
         font-size: 14pt;
         height: 38px;
-        width: 250px;
         margin-bottom: 8px;
         margin-top: auto;
     }
@@ -26,7 +25,7 @@
 </style>
 
 <template>
-    <table style="width: 1000px; margin: auto;">
+    <table style="width: 1004px; margin: auto; border-spacing: 0;">
         <tr>
             <td style="text-align: left; vertical-align: top">
                 <img alt="Pixel Inc Logo" src="../assets/pixelIncLogo.png" height="100" /><br>
@@ -34,7 +33,9 @@
                 and a tribute to web design of the past.
             </td>
             <td style="vertical-align: bottom">
-                <button v-if="info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>
+                <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
+                <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
+                <button v-if="!wrongNetwork && info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>
             </td>
             <td style="text-align: right">
                 <span v-if="info.chainId == 0">
@@ -131,7 +132,7 @@
             </div>
         </div>
 
-        <div v-if="image && selected" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%)">
+        <div v-if="image && selected" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 500px;">
             <div class="title-bar">
                 <div class="title-bar-text">Claim your piece of the canvas, get some PIXELs</div>
                 <div class="title-bar-controls">
@@ -144,6 +145,10 @@
                     Size: {{ blockWidth * 10 }}x{{ blockHeight * 10 }} pixels<br>
                     Cost: {{ cost }} MATIC<br>
                     You will receive {{ (blockWidth * blockHeight - duplicateBlocks) * 100 }} PIXEL tokens
+                    <span v-if="blockWidth * blockHeight - duplicateBlocks > 25">
+                        <br><br>
+                        They area is too large for a single transaction. <strong>{{ Math.ceil((blockWidth * blockHeight - duplicateBlocks) / 25) }} transactions will be queued</strong>. If any of the transactions fail, you can simply redo it with the same image and the same area. Any blocks of pixels already succesfully bought will be ignored (not bought again).
+                    </span>
                     <span v-if="duplicateBlocks"><br>{{ duplicateBlocks * 100 }} duplicate pixels found, ignored</span>
                 </p>
                 <div class="field-row-stacked" style="width: 100%">
@@ -161,7 +166,7 @@
         </div>        
     </div>
 
-    <table style="width: 1000px; margin: auto;">
+    <table style="width: 1004px; margin: auto; border-spacing: 0;">
         <tr>
             <td style="text-align: left">
                 <img src="../assets/catsheepnow.gif" height="80">
@@ -174,8 +179,13 @@
             </td>
             <td>
                 <img style="float: right" src="../assets/tom.jpg" height="80">
-                <strong>Tom</strong><br>
-                "All my friends love this site!"
+                <p style="text-align: right; padding-right: 100px">
+                    <span style="color: rgb(55, 94, 165)">
+                        "Some of my best friends<br>
+                        are made of pixels"<br>
+                    </span>
+                    <strong>- Tom</strong>
+                </p>
             </td>
         </tr>
         <tr>
@@ -216,19 +226,19 @@
         </tr>
     </table>
     
+    PIXEL address is <a :href="contractURL" target="_blank">{{ contractAddress }}</a><br>Contracts are NOT audited.<br>
+    All data is stored on-chain. Website is <a :href="'https://k51qzi5uqu5djfpuv5xum9zgp22h61hr9x1cur1vkncsohclupyiafrudbt6pt.ipns.dweb.link/?ref=' + referrer">hosted on IPFS</a>.
+    <br>
+    <img src="../assets/underconstruction.gif">
+    <br>
+    <br>
+
     <div v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()">
         <hr>
         Admin<br>
         <button @click="withdraw">Withdraw MATIC</button>
         <button @click="mint">Mint CANVAS NFT</button>
     </div>
-
-    <hr>
-    <img src="../assets/underconstruction.gif">
-    <br>
-    <br>
-    PIXEL address is {{ contractAddress }}
-
 </template>
 
 <script lang="ts">
@@ -421,6 +431,7 @@ export default defineComponent({
     computed: {
         chainName() { return constants.network.chainName },
         contractAddress() { return constants.pixel },
+        contractURL() { return constants.network.blockExplorerUrls[0] + 'address/' + constants.pixel + "#code" },
         selectionStyle() {
             let style = "position: absolute; pointer-events: none;"
             style += this.selecting || this.selected ? "" : "display: none;"
@@ -467,7 +478,7 @@ export default defineComponent({
         },
         async newBlock() {
             let ctx = this.canvas?.getContext("2d")
-            if (window.provider && this.info.address && ctx) {
+            if (ctx) {
                 let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0]);
                 let p = PixelFactory.connect(constants.pixel, provider)
 
@@ -486,7 +497,6 @@ export default defineComponent({
                     },
                     upline: pollInfo.upline_
                 }
-                console.log(this.pollInfo)
 
                 let currentUpdatesCount = this.pollInfo.updates.toNumber()
                 if (currentUpdatesCount < this.updateIndex) {
@@ -709,8 +719,13 @@ export default defineComponent({
                 if (self.image) {
                     e.preventDefault()
                 } else if (e.target === self.canvas) {
-                    if (!self.buying && self.tooltip && self.tooltipBlock && self.tooltipBlock.url)
-                    window.open(self.tooltipBlock.url, "_blank")
+                    if (!self.buying && self.tooltip && self.tooltipBlock) {
+                        if (self.tooltipBlock.url) {
+                            window.open(self.tooltipBlock.url, "_blank")
+                        } else {
+                            self.buying = true
+                        }
+                    }
                 }
             }
         }
