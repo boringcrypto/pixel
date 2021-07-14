@@ -395,7 +395,7 @@ export default defineComponent({
             startTimeStamp: number, lockTimeStamp: number, matic: ethers.providers.JsonRpcProvider | null, blocks: Block[], pollInfo: PollInfo | null, updateIndex: number, 
             buying: boolean, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, mouseBelowHalf: boolean, mx: number, my: number,
             selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, 
-            blockNumbers: number[], pixels: string[], cost: BigNumber, gas: BigNumber, gasPrice: BigNumber, duplicateBlocks: number, url: string, description: string, now: number } {
+            blockNumbers: number[], pixels: string[], cost: BigNumber, gas: BigNumber, gasPrice: BigNumber, duplicateBlocks: number, url: string, description: string, now: number, agent: any } {
         return {
             loading: false,
             startTimeStamp: 0,
@@ -429,6 +429,8 @@ export default defineComponent({
             url: "",
             description: "",
             now: Date.now(),
+
+            agent: null,
         }
     },
     async created() {
@@ -666,6 +668,9 @@ export default defineComponent({
                 await p.mintCanvas()
             }
         },
+        agentDo(action: string) {
+            this.agent.play(action)
+        }
     },
     mounted() {
         const self = this
@@ -687,22 +692,30 @@ export default defineComponent({
                 }
             }
 
-            let app = document.getElementById("app")
-            if (app) {
-                app.style.display = "block";
-            }
-            let splash = document.getElementById("splash")
-            if (splash) {
-                splash.style.display = "none";
-            }
+            window.setTimeout(function() {
+                let app = document.getElementById("app")
+                if (app) {
+                    app.style.display = "block";
+                }
+                let splash = document.getElementById("splash")
+                if (splash) {
+                    splash.style.display = "none";
+                }
+
+                var myAudio = document.createElement('audio');
+                if (myAudio.canPlayType('audio/mpeg')) {
+                    myAudio.setAttribute('src','/win31.mp3');
+                }
+                myAudio.volume = 0.3
+                myAudio.play();                
+            }, 1000)
 
             this.newBlock()
 
             const agents = ["Clippy", "Merlin", "Rover", "Links"]
             const agentName = agents[Math.floor(Math.random() * agents.length)]
             clippy.load(agentName, (agent: any) => {
-                // @ts-ignore
-                window.agent = agent
+                self.agent = agent
                 agent.show()
                 agent.speak("Welcome to Pixel Inc!")
             });            
@@ -801,6 +814,7 @@ export default defineComponent({
                                 self.gas = self.gas.add(gas)
                             }
 
+                            self.agentDo("Congratulate")
                         }
                     } else {
                         self.buying = false
