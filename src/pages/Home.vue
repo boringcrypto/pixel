@@ -472,6 +472,11 @@ export default defineComponent({
         lockDiffSeconds(): number { return Math.floor(this.lockDiff / (1000)) % 60 },
         referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero }
     },
+    watch: {
+        'info.address': function() {
+            this.newBlock()
+        }
+    },
     methods: {
         async switchToNetwork() {
             await window.ethereum.request({method: 'wallet_addEthereumChain', params: [constants.network]})
