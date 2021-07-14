@@ -707,7 +707,7 @@ export default defineComponent({
 
                     var myAudio = document.createElement('audio');
                     if (myAudio.canPlayType('audio/mpeg')) {
-                        myAudio.setAttribute('src','/win31.mp3');
+                        myAudio.setAttribute('src','/' + ["win95", "winxp"][Math.floor(Math.random() * 2)] + '.mp3');
                     }
                     myAudio.volume = 0.3
                     myAudio.play();                
