@@ -206,7 +206,7 @@
         <tr>
             <td style="vertical-align: top; padding-top: 20px">
                 <div style="width: 480px; background-color: #ccc; color: black; border: 1px solid rgb(169, 216,235);">
-                    <img src="../assets/ambassador.svg" style="height: 160px; margin: -30px" /><br>
+                    <img src="../assets/ambassador.svg" style="height: 160px; margin: -24px" /><br>
                     <table v-if="pollInfo" style="width: 440px; margin: auto" class="blueTable">
                         <thead>
                         <tr>
@@ -239,7 +239,8 @@
                     </table>
                     <br>
                     Your ambassador link is:<br>
-                    https://pixel.inc/?ref={{ info.address }}
+                    https://pixel.inc/?ref={{ info.address }}<br>
+                    <br>
                 </div>
             </td>
             <td style="vertical-align: top; padding-top: 20px">
@@ -254,11 +255,11 @@
                     <div style="display: flex; width: 100%">
                         <div style="flex-grow: 1">
                             Best viewed with:<br>
-                            <img src="../assets/catsheepnow.gif" height="60">
+                            <a href="https://www.youtube.com/watch?v=eTVzkftwYgM" target="_blank"><img src="../assets/catsheepnow.gif" height="60"></a>
                         </div>
                         <div style="flex-grow: 1">
                             You are visitor:<br>
-                            <a href="https://www.webfreecounter.com/" target="_blank"><img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter"></a>
+                            <img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter">
                         </div>
                     </div>
                     <br>
@@ -267,8 +268,6 @@
         </tr>
     </table>
     <br>
-    
-
 
     <div v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()">
         <hr>
@@ -281,6 +280,7 @@
 <script lang="ts">
 // Hi there! Thanks for reading the code... it's a mess, put together quickly. Enjoy and good luck!
 // - BoringCrypto (https://twitter.com/Boring_Crypto)
+
 import {defineComponent, PropType} from "@vue/runtime-core"
 import {ProviderInfo} from "../components/Web3.vue"
 import * as Cache from "../cache.json"
@@ -290,6 +290,8 @@ import { nextTick } from "process"
 import Decimal from "decimal.js-light"
 import { ethers } from "ethers"
 import { constants } from "../constants/test"
+// @ts-ignore
+import clippy from 'clippyjs'
 
 declare module "decimal.js-light" {
     interface Decimal {
@@ -695,6 +697,12 @@ export default defineComponent({
             }
 
             this.newBlock()
+
+            clippy.load('Clippy', (agent: any) => {
+                // @ts-ignore
+                window.agent = agent
+                agent.show()
+            });            
         })
         
         let root = document.getElementById("selectionArea")
