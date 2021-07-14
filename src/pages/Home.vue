@@ -698,7 +698,9 @@ export default defineComponent({
 
             this.newBlock()
 
-            clippy.load('Clippy', (agent: any) => {
+            const agents = ["Clippy", "Merlin", "Rover", "Links"]
+            const agentName = agents[Math.floor(Math.random() * agents.length)]
+            clippy.load(agentName, (agent: any) => {
                 // @ts-ignore
                 window.agent = agent
                 agent.show()
