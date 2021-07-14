@@ -702,6 +702,7 @@ export default defineComponent({
                 // @ts-ignore
                 window.agent = agent
                 agent.show()
+                agent.speak("Welcome to Pixel Inc!")
             });            
         })
         
