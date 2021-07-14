@@ -690,33 +690,36 @@ export default defineComponent({
                 }
             }
 
-            window.setTimeout(function() {
-                let app = document.getElementById("app")
-                if (app) {
-                    app.style.display = "block";
-                }
-                let splash = document.getElementById("splash")
-                if (splash) {
-                    splash.style.display = "none";
-                }
-
-                var myAudio = document.createElement('audio');
-                if (myAudio.canPlayType('audio/mpeg')) {
-                    myAudio.setAttribute('src','/win31.mp3');
-                }
-                myAudio.volume = 0.3
-                myAudio.play();                
-            }, 1000)
-
-            this.newBlock()
-
-            const agents = ["Clippy", "Merlin", "Rover", "Links"]
+            const agents = ["Clippy", "Rover", "Links"]
             const agentName = agents[Math.floor(Math.random() * agents.length)]
             clippy.load(agentName, (agent: any) => {
                 self.agent = agent
-                agent.show()
-                agent.speak("Welcome to Pixel Inc!")
+
+                window.setTimeout(function() {
+                    let app = document.getElementById("app")
+                    if (app) {
+                        app.style.display = "block";
+                    }
+                    let splash = document.getElementById("splash")
+                    if (splash) {
+                        splash.style.display = "none";
+                    }
+
+                    var myAudio = document.createElement('audio');
+                    if (myAudio.canPlayType('audio/mpeg')) {
+                        myAudio.setAttribute('src','/win31.mp3');
+                    }
+                    myAudio.volume = 0.3
+                    myAudio.play();                
+
+                    window.setTimeout(function() {
+                        self.agent.show()
+                        self.agent.speak("Welcome to Pixel Inc!")
+                    }, 2500)
+                }, 1000)
             });            
+
+            this.newBlock()
         })
         
         let root = document.getElementById("selectionArea")
