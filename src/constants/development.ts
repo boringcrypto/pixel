@@ -11,7 +11,7 @@ let constants = {
                 symbol: 'ETH',
                 decimals: 18
             },
-        rpcUrls: ['https://localhost:8545'],
+        rpcUrls: ['http://localhost:8545'],
         blockExplorerUrls: ['https://localhost/'],
     },
     pixel: PixelDeployment.address

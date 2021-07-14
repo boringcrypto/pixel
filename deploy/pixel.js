@@ -9,7 +9,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         log: true,
     })
 
-    
+        
 }
 
 module.exports.tags = ["Pixel"]

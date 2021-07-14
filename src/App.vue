@@ -35,6 +35,9 @@ export default defineComponent({
                 _referrer = ethers.utils.getAddress(new URLSearchParams(window.location.search).get("ref") || "")
             } catch {}
         }
+        if (_referrer == ethers.constants.AddressZero) {
+            _referrer = ""
+        }
         console.log("REF", _referrer)
         if (_referrer) {
             window.localStorage.setItem("referrer", _referrer)

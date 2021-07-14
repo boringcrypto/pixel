@@ -506,8 +506,19 @@ contract BoringBatchable is BaseBoringBatchable {
 }
 
 // File contracts/Pixel.sol
-//License-Identifier: UNLICENSED
-// Copyright BoringCrypto - All rights reserved
+//License-Identifier: MIT
+//  _____ _          _   _____            
+// |  __ (_)        | | |_   _|           
+// | |__) |__  _____| |   | |  _ __   ___ 
+// |  ___/ \ \/ / _ \ |   | | | '_ \ / __|
+// | |   | |>  <  __/ |  _| |_| | | | (__ 
+// |_|   |_/_/\_\___|_| |_____|_| |_|\___|
+//
+// Flung together by BoringCrypto during COVID-19 lockdown in 2021
+// Stay safe! 
+
+// Alpha here https://bit.ly/3icxSru
+
 pragma solidity ^0.6.12;
 
 
@@ -544,15 +555,16 @@ contract Canvas {
     event Transfer(address indexed _from, address indexed _to, uint256 indexed _tokenId);
     event Approval(address indexed _owner, address indexed _approved, uint256 indexed _tokenId);
     event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
+    event Buy(address hodler, address buyer, uint256 price, uint256 hodler_share);
 
     string public constant name = "The Canvas of Pixels";
     string public constant symbol = "CANVAS";
 
-    address public holder;
+    address public hodler;
     address public allowed;
 
     uint256 public price;
-    IERC20 public pixel;
+    IERC20 public immutable pixel;
     string public info;
 
     mapping(address => mapping(address => bool)) public operators;
@@ -560,6 +572,7 @@ contract Canvas {
     constructor(IERC20 _pixel) public {
         pixel = _pixel;
         price = _pixel.totalSupply() / 10;
+        hodler = address(_pixel);
     }
 
     function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
@@ -575,13 +588,13 @@ contract Canvas {
 
     function balanceOf(address _owner) public view returns (uint256) {
         require(_owner != address(0), "No zero address");
-        return _owner == holder ? 1 : 0;
+        return _owner == hodler ? 1 : 0;
     }
 
     function ownerOf(uint256 _tokenId) public view returns (address) {
         require(_tokenId == 0, "Invalid token ID");
-        require(holder != address(0), "No owner");
-        return holder;
+        require(hodler != address(0), "No owner");
+        return hodler;
     }
 
     function _transfer(
@@ -590,11 +603,12 @@ contract Canvas {
         uint256 _tokenId
     ) internal {
         require(_tokenId == 0, "Invalid token ID");
-        require(from == holder, "From not owner");
-        require(from == msg.sender || from == allowed || operators[holder][from], "Transfer not allowed");
+        require(from == hodler, "From not owner");
+        require(from == msg.sender || from == allowed || operators[hodler][from], "Transfer not allowed");
         require(to != address(0), "No zero address");
-        holder = to;
+        hodler = to;
         allowed = address(0);
+        emit Transfer(from, to, _tokenId);
     }
 
     function isContract(address account) internal view returns (bool) {
@@ -639,11 +653,14 @@ contract Canvas {
 
     function approve(address _approved, uint256 _tokenId) public payable {
         require(_tokenId == 0, "Invalid token ID");
+        require(msg.sender == hodler, "Not hodler");
         allowed = _approved;
+        emit Approval(msg.sender, _approved, _tokenId);
     }
 
     function setApprovalForAll(address _operator, bool _approved) public {
         operators[msg.sender][_operator] = _approved;
+        emit ApprovalForAll(msg.sender, _operator, _approved);
     }
 
     function getApproved(uint256 _tokenId) public view returns (address) {
@@ -655,26 +672,38 @@ contract Canvas {
         return operators[_owner][_operator];
     }
 
-    function totalSupply() external view returns (uint256) {
-        return holder == address(0) ? 0 : 1;
+    function totalSupply() external pure returns (uint256) {
+        return 1;
     }
 
     function buy() external payable {
         require(msg.value == price, "Value != price");
 
-        // Send original price paid + 10% back to the holder with max 20.000 gas. If this fails, continue anyway to prevent grieving/blocking attacks.
-        (bool success, ) = holder.call{value: price.mul(110) / 150, gas: 20000}("");
+        // Send original price paid + 10% back to the hodler with max 20.000 gas. If this fails, continue anyway to prevent grieving/blocking attacks.
+        uint256 hodler_share = hodler == address(pixel) ? 0 : price.mul(110) / 150;
+        (bool success, ) = hodler.call{value: hodler_share, gas: 20000}("");
 
-        // Send the remaining funds to the PIXEL token holders.
-        (success, ) = address(pixel).call{value: price.mul(40) / 150, gas: 20000}("");
+        // Send the remaining funds to the PIXEL token hodlers.
+        (success, ) = address(pixel).call{value: price.sub(hodler_share), gas: 20000}("");
         require(success, "Funding pixel pool failed");
-        holder = msg.sender;
+
+        emit Transfer(hodler, msg.sender, 0);
+        emit Buy(hodler, msg.sender, price, hodler_share);
+
+        price = price.mul(150) / 100; // Increase price by 50%
+        hodler = msg.sender;
         allowed = address(0);
     }
 
     function setInfo(string memory info_) external {
-        require(msg.sender == holder, "Canvas: not holder");
+        require(msg.sender == hodler, "Canvas: not hodler");
         info = info_;
+    }
+
+    function poll() public view returns(address hodler_, address allowed_, uint256 price_) {
+        hodler_ = hodler;
+        allowed_ = allowed;
+        price_ = price;
     }
 }
 
@@ -699,8 +728,8 @@ contract MLM {
         require(rep != upline_, "MLM: Can't refer yourself");
         upline[rep] = upline_;
         (address lvl1, address lvl2, address lvl3) = _getUpline(rep);
-        if (lvl1 != address(0)) { downline[lvl1].tier1++; }
-        if (lvl2 != address(0)) { downline[lvl2].tier2++; }
+        if (lvl1 != address(0)) { downline[lvl1].tier1++; downline[lvl1].tier2 += downline[rep].tier1; downline[lvl1].tier2 += downline[rep].tier3; }
+        if (lvl2 != address(0)) { downline[lvl2].tier2++; downline[lvl2].tier2 += downline[rep].tier3; }
         if (lvl3 != address(0)) { downline[lvl3].tier3++; }
         emit MLMAddRep(rep, upline_);
     }
@@ -740,7 +769,7 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
     uint8 public constant decimals = 18;
     address public canvas;
 
-    uint256 private constant START_BLOCK_PRICE = 1e14; // Price starts at 1 MATIC/pixel = 100 MATIC/block
+    uint256 private constant START_BLOCK_PRICE = 10e18; // Price starts at 0.1 MATIC/pixel = 10 MATIC/block
 
     struct BlockLink {
         string url; // url for this block (should be < 256 characters)
@@ -766,7 +795,7 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
     BlockLink[] public link;
     // data is organized in blocks of 10x10. There are 100x100 blocks. Base is 0 and counting goes left to right, then top to bottom.
     Block[10000] public blk;
-    uint256 public constant START_TIMESTAMP = 1626171001;//1626368400;
+    uint256 public constant START_TIMESTAMP = 1626368400;
     uint256 public constant LOCK_TIMESTAMP = START_TIMESTAMP + 2 weeks;
     uint256[] public updates;
 
@@ -780,7 +809,7 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
 
     function mintCanvas() external {
         // The canvas is final
-        require(block.timestamp >= LOCK_TIMESTAMP);
+        require(block.timestamp >= LOCK_TIMESTAMP, "Creation Phase not finished");
         // Send any funds left to the owner. If this fails, continue anyway to prevent blocking.
         bool success;
         (success, ) = owner.call{value: address(this).balance}("");
@@ -899,13 +928,14 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
             // Withdraw any accidental token deposits
             token.safeTransfer(owner, token.balanceOf(address(this)));
         } else if (block.timestamp < LOCK_TIMESTAMP) {
-            // After canvas is created, funds go to PIXEL holders and can't be withdrawn by the owner
+            // After canvas is created, funds go to PIXEL hodlers and can't be withdrawn by the owner
             bool success;
             (success, ) = owner.call{value: address(this).balance}("");
         }
     }
 
-    function poll(address user) public view returns (uint256 updates_, uint256 balance, uint256 supply, address upline_, DownlineStats memory downline_) {
+    function poll(address user) public view returns (address canvas_, uint256 updates_, uint256 balance, uint256 supply, address upline_, DownlineStats memory downline_) {
+        canvas_ = canvas;
         updates_ = updates.length;
         balance = balanceOf[user];
         supply = totalSupply;
@@ -913,6 +943,6 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
         downline_ = downline[user];
     }
 
-    // Receive funds from NFT sales for all PIXEL holders
+    // Receive funds from NFT sales for all PIXEL hodlers
     receive() external payable {}
 }

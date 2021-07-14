@@ -32,7 +32,7 @@
                 An experiment in collaborative 'art'<br>
                 and a tribute to web design of the past.
             </td>
-            <td style="vertical-align: bottom">
+            <td v-if="started && !locked" style="vertical-align: bottom">
                 <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
                 <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
                 <button v-if="!wrongNetwork && info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>
@@ -52,7 +52,7 @@
                     {{ info.address }}
                 </span>
                 <br><br>
-                <table v-if="pollInfo" style="margin-left: auto;">
+                <table v-if="started && pollInfo" style="margin-left: auto;">
                     <tbody>
                         <tr>
                             <td style="border: 3px ridge; padding: 4px;">Total PIXELs</td>
@@ -65,8 +65,24 @@
                     </tbody>
                 </table>
                 <br>
-                <strong>Creation Phase</strong><br>
-                ends in {{ lockDiffDays }} days {{ lockDiffHours }} hours {{ lockDiffMinutes }} min {{ lockDiffSeconds }} sec
+                <span v-if="started">
+                    <span v-if="!locked">
+                        <strong>Creation Phase</strong><br>
+                        ends in {{ lockDiffDays }} days {{ lockDiffHours }} hours {{ lockDiffMinutes }} min {{ lockDiffSeconds }} sec
+                    </span>
+                    <span v-else>
+                        <strong>Canvas NFT Phase</strong><br>
+                        The canvas is now locked.
+                    </span>
+                </span>
+                <span v-else-if="startTimeStamp">
+                    <strong>Creation Phase</strong><br>
+                    starting in 
+                        <span v-if="startDiffDays">{{ startDiffDays }} days </span>
+                        <span v-if="startDiffDays || startDiffHours">{{ startDiffHours }} hours </span>
+                        <span v-if="startDiffDays || startDiffHours || startDiffMinutes">{{ startDiffMinutes }} min </span>
+                        {{ startDiffSeconds }} sec
+                </span>
             </td>
         </tr>
     </table>
@@ -93,7 +109,7 @@
                 </span>
             </div>
             <div class="status-bar">
-                <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 2 || 0.0001 }} MATIC per pixel</p>
+                <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 2 || 0.1 }} MATIC per pixel</p>
                 <p class="status-bar-field">{{ tooltipBlock?.owner ? "Owned" : "Unowned" }}</p>
             </div>
         </div>        
@@ -143,7 +159,8 @@
                 <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 3. Purchase</h3>
                 <p>
                     Size: {{ blockWidth * 10 }}x{{ blockHeight * 10 }} pixels<br>
-                    Cost: {{ cost }} MATIC<br>
+                    Pixel cost: {{ cost.print(18, 0) }} MATIC<br>
+                    Gas costs (est): {{ gas.mul(gasPrice).print(18, 0)}} MATIC ({{ gasPrice.print(9, 0) }} gwei)<br>
                     You will receive {{ (blockWidth * blockHeight - duplicateBlocks) * 100 }} PIXEL tokens
                     <span v-if="blockWidth * blockHeight - duplicateBlocks > 25">
                         <br><br>
@@ -168,16 +185,14 @@
 
     <table style="width: 1004px; margin: auto; border-spacing: 0;">
         <tr>
-            <td style="text-align: left">
-                <img src="../assets/catsheepnow.gif" height="80">
+            <td style="text-align: left; vertical-align: top; padding-top: 10px;">
+                <a href="https://twitter.com/Boring_Crypto" target="_blank"><img src="../assets/social_twitter.svg" height="32" style="padding-right: 10px"></a>
+                <a href="https://icq.im/760436916" target="_blank"><img src="../assets/icq.png" height="32" style="padding-right: 10px"></a>
+                <a href="https://boringcrypto.medium.com/pixel-inc-artvertising-nft-1c1ddaa16f32" target="_blank"><img src="../assets/social_medium.svg" height="32" style="padding-right: 10px"></a>
+                <a href="https://discord.gg/KE9R3GYJ" target="_blank"><img src="../assets/social_discord.svg" height="32" style="padding-right: 10px"></a>
+                <a href="https://github.com/boringcrypto/pixel" target="_blank"><img src="../assets/social_github.svg" height="32" style="padding-right: 10px"></a>
             </td>
-            <td style="text-align: left">
-                You are visitor:<br>
-                <!-- Start of WebFreeCounter Code -->
-                <a href="https://www.webfreecounter.com/" target="_blank"><img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter"></a>
-                <!-- End of WebFreeCounter Code -->    
-            </td>
-            <td>
+            <td style="padding-top: 10px">
                 <img style="float: right" src="../assets/tom.jpg" height="80">
                 <p style="text-align: right; padding-right: 100px">
                     <span style="color: rgb(55, 94, 165)">
@@ -189,49 +204,71 @@
             </td>
         </tr>
         <tr>
-            <td style="text-align: center" colspan="3">
-                <img src="../assets/ambassador.svg" style="height: 160px; margin: -30px" />
-                <p>
-                    Your ambassador link is:<br>
-                    https://pixel.inc/?ref={{ info.address }}<br>
-                    <br>
-                    <table v-if="pollInfo" style="margin: auto">
+            <td style="vertical-align: top; padding-top: 20px">
+                <div style="width: 480px; background-color: #ccc; color: black; border: 1px solid rgb(169, 216,235);">
+                    <img src="../assets/ambassador.svg" style="height: 160px; margin: -30px" /><br>
+                    <table v-if="pollInfo" style="width: 440px; margin: auto" class="blueTable">
+                        <thead>
                         <tr>
-                            <td></td>
-                            <td>Payout</td>
-                            <td>Lemmings</td>
-                            <td>Earnings</td>
+                            <th></th>
+                            <th>Payout</th>
+                            <th>Lemmings</th>
+                            <th>Earnings</th>
                         </tr>
+                        </thead>
+                        <tbody>
                         <tr>
                             <td>Tier 1</td>
-                            <td>20%</td>
-                            <td>{{ pollInfo.downline.tier1 }}</td>
-                            <td>{{ pollInfo.downline.earnings1.print(18, 2) }}</td>
+                            <td style="text-align: right">20%</td>
+                            <td style="text-align: right">{{ pollInfo.downline.tier1 }}</td>
+                            <td style="text-align: right">{{ pollInfo.downline.earnings1.print(18, 2) }}</td>
                         </tr>
                         <tr>
                             <td>Tier 2</td>
-                            <td>10%</td>
-                            <td>{{ pollInfo.downline.tier2 }}</td>
-                            <td>{{ pollInfo.downline.earnings2.print(18, 2) }}</td>
+                            <td style="text-align: right">10%</td>
+                            <td style="text-align: right">{{ pollInfo.downline.tier2 }}</td>
+                            <td style="text-align: right">{{ pollInfo.downline.earnings2.print(18, 2) }}</td>
                         </tr>
                         <tr>
                             <td>Tier 3</td>
-                            <td>5%</td>
-                            <td>{{ pollInfo.downline.tier3 }}</td>
-                            <td>{{ pollInfo.downline.earnings3.print(18, 2) }}</td>
+                            <td style="text-align: right">5%</td>
+                            <td style="text-align: right">{{ pollInfo.downline.tier3 }}</td>
+                            <td style="text-align: right">{{ pollInfo.downline.earnings3.print(18, 2) }}</td>
                         </tr>
+                        </tbody>
                     </table>
-                </p>
+                    <br>
+                    Your ambassador link is:<br>
+                    https://pixel.inc/?ref={{ info.address }}
+                </div>
+            </td>
+            <td style="vertical-align: top; padding-top: 20px">
+                <div style="margin-left: auto; width: 480px; background-color: #ccc; color: black; border: 1px solid rgb(169, 216,235);">
+                    <h4 style="color: rgb(29, 74, 129); margin-block-start: 0.5em; margin-block-end: 0.5em">Pixel Smart Contract</h4>
+                    PIXEL address is <a :href="contractURL" target="_blank">{{ contractAddress }}</a><br>
+                    CAUTION: Contracts are NOT audited.<br>
+                    All data is stored on-chain. Website is <a :href="'https://pixelinc.eth.link/?ref=' + referrer">hosted on IPFS</a>.
+                    <br>
+                    <br>
+
+                    <div style="display: flex; width: 100%">
+                        <div style="flex-grow: 1">
+                            Best viewed with:<br>
+                            <img src="../assets/catsheepnow.gif" height="60">
+                        </div>
+                        <div style="flex-grow: 1">
+                            You are visitor:<br>
+                            <a href="https://www.webfreecounter.com/" target="_blank"><img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter"></a>
+                        </div>
+                    </div>
+                    <br>
+                </div>
             </td>
         </tr>
     </table>
+    <br>
     
-    PIXEL address is <a :href="contractURL" target="_blank">{{ contractAddress }}</a><br>Contracts are NOT audited.<br>
-    All data is stored on-chain. Website is <a :href="'https://pixelinc.eth.link/?ref=' + referrer">hosted on IPFS</a>.
-    <br>
-    <img src="../assets/underconstruction.gif">
-    <br>
-    <br>
+
 
     <div v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()">
         <hr>
@@ -353,12 +390,13 @@ export default defineComponent({
     },
     data(): { 
             loading: boolean,
-            lockTimeStamp: number, matic: ethers.providers.JsonRpcProvider | null, blocks: Block[], pollInfo: PollInfo | null, updateIndex: number, 
+            startTimeStamp: number, lockTimeStamp: number, matic: ethers.providers.JsonRpcProvider | null, blocks: Block[], pollInfo: PollInfo | null, updateIndex: number, 
             buying: boolean, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, mouseBelowHalf: boolean, mx: number, my: number,
             selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, 
-            blockNumbers: number[], pixels: string[], cost: number, duplicateBlocks: number, url: string, description: string, now: number } {
+            blockNumbers: number[], pixels: string[], cost: BigNumber, gas: BigNumber, gasPrice: BigNumber, duplicateBlocks: number, url: string, description: string, now: number } {
         return {
             loading: false,
+            startTimeStamp: 0,
             lockTimeStamp: 0,
 
             matic: null,
@@ -382,7 +420,9 @@ export default defineComponent({
             endSelectY: 0,
             blockNumbers: [],
             pixels: [],
-            cost: 0,
+            cost: BigNumber.from(0),
+            gas: BigNumber.from(0),
+            gasPrice: BigNumber.from(0),
             duplicateBlocks: 0,
             url: "",
             description: "",
@@ -425,8 +465,8 @@ export default defineComponent({
             }
         })
         let p = PixelFactory.connect(constants.pixel, provider)
+        this.startTimeStamp = (await p.START_TIMESTAMP()).toNumber()
         this.lockTimeStamp = (await p.LOCK_TIMESTAMP()).toNumber()
-        this.newBlock()
     },
     computed: {
         chainName() { return constants.network.chainName },
@@ -463,8 +503,17 @@ export default defineComponent({
         },
         blockWidth(): number { return Math.abs(this.endSelectX - this.startSelectX) + 1 },
         blockHeight(): number { return Math.abs(this.endSelectY - this.startSelectY) + 1 },
+        startDate(): Date | null { return this.startTimeStamp ? new Date(this.startTimeStamp * 1000) : null },
         lockDate(): Date | null { return this.lockTimeStamp ? new Date(this.lockTimeStamp * 1000) : null },
+        started(): boolean { return this.now > this.startTimeStamp * 1000 ? true : false },
         locked(): boolean { return this.now > this.lockTimeStamp * 1000 ? true : false },
+        
+        startDiff(): number { return this.startDate ? this.startDate.getTime() - this.now : 0 },
+        startDiffDays(): number { return Math.floor(this.startDiff / (24 * 60 * 60 * 1000)) },
+        startDiffHours(): number { return Math.floor(this.startDiff / (60 * 60 * 1000)) % 24 },
+        startDiffMinutes(): number { return Math.floor(this.startDiff / (60 * 1000)) % 60 },
+        startDiffSeconds(): number { return Math.floor(this.startDiff / (1000)) % 60 },
+
         lockDiff(): number { return this.lockDate ? this.lockDate.getTime() - this.now : 0 },
         lockDiffDays(): number { return Math.floor(this.lockDiff / (24 * 60 * 60 * 1000)) },
         lockDiffHours(): number { return Math.floor(this.lockDiff / (60 * 60 * 1000)) % 24 },
@@ -484,7 +533,8 @@ export default defineComponent({
         async newBlock() {
             let ctx = this.canvas?.getContext("2d")
             if (ctx) {
-                let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0]);
+                let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0])
+                this.gasPrice = await provider.getGasPrice()
                 let p = PixelFactory.connect(constants.pixel, provider)
 
                 let pollInfo = await p.poll(this.info.address || ethers.constants.AddressZero)
@@ -574,8 +624,6 @@ export default defineComponent({
             reader.onload = function (event) {
                 self.image = new Image()
                 self.image.src = event.target?.result as string
-                let preview = self.$refs.preview as HTMLImageElement
-                preview.src = event.target?.result as string
             }
             reader.readAsDataURL(file)
         },
@@ -622,7 +670,6 @@ export default defineComponent({
         nextTick(() => {
             this.canvas = document.getElementById("canvas") as HTMLCanvasElement
             let ctx = this.canvas?.getContext("2d")
-            let start = Date.now()
             if (ctx) {
                 for (let b = 0; b < 10000; b++) {
                     let block = this.blocks[b]
@@ -637,7 +684,17 @@ export default defineComponent({
                     }
                 }
             }
-            console.log(Date.now() - start)
+
+            let app = document.getElementById("app")
+            if (app) {
+                app.style.display = "block";
+            }
+            let splash = document.getElementById("splash")
+            if (splash) {
+                splash.style.display = "none";
+            }
+
+            this.newBlock()
         })
         
         let root = document.getElementById("selectionArea")
@@ -660,6 +717,17 @@ export default defineComponent({
                 if (self.selecting) {
                     self.endSelectX = Math.floor((e.pageX - (root?.offsetLeft || 0)) / 10)
                     self.endSelectY = Math.floor((e.pageY - (root?.offsetTop || 0)) / 10)
+
+                    if (self.image) {
+                        let canvas = document.createElement("CANVAS") as HTMLCanvasElement
+                        canvas.width = self.blockWidth * 10
+                        canvas.height = self.blockHeight * 10
+                        let ctx = canvas.getContext("2d") as CanvasRenderingContext2D
+                        ctx.drawImage(self.image, 0, 0, canvas.width, canvas.height)
+
+                        let preview = self.$refs.preview as HTMLImageElement
+                        preview.src = canvas.toDataURL()
+                    }
                 }
                 if (e.target === self.canvas) {
                     self.mouseBelowHalf = e.offsetY > 500
@@ -711,7 +779,17 @@ export default defineComponent({
                         if (window.provider) {
                             const signer = window.provider?.getSigner(self.info.address)
                             let p = PixelFactory.connect(constants.pixel, signer)
-                            self.cost = (await p["getCost(uint256[])"](self.blockNumbers)).div("10000000000000000").toNumber() / 100
+                            self.cost = await p["getCost(uint256[])"](self.blockNumbers)
+
+                            self.gas = BigNumber.from("0")
+                            for (let i = 0; i <= Math.floor((self.blockNumbers.length - 1) / 25); i++) {
+                                let blockNumbers = self.blockNumbers.slice(i * 25, (i + 1) * 25)
+                                let pixels = self.pixels.slice(i * 25, (i + 1) * 25)
+                                let cost = await p["getCost(uint256[])"](blockNumbers)
+                                let gas = await p.estimateGas["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, self.url, self.description, pixels, self.referrerClean || ethers.constants.AddressZero, { value: cost })
+                                self.gas = self.gas.add(gas)
+                            }
+
                         }
                     } else {
                         self.buying = false
@@ -727,7 +805,7 @@ export default defineComponent({
                     if (!self.buying && self.tooltip && self.tooltipBlock) {
                         if (self.tooltipBlock.url) {
                             window.open(self.tooltipBlock.url, "_blank")
-                        } else {
+                        } else if (self.started && !self.locked && !self.wrongNetwork && self.info.address) {
                             self.buying = true
                         }
                     }

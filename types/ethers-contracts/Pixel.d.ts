@@ -644,6 +644,7 @@ export class Pixel extends Contract {
       user: string,
       overrides?: CallOverrides
     ): Promise<{
+      canvas_: string;
       updates_: BigNumber;
       balance: BigNumber;
       supply: BigNumber;
@@ -662,11 +663,12 @@ export class Pixel extends Contract {
         4: number;
         5: number;
       };
-      0: BigNumber;
+      0: string;
       1: BigNumber;
       2: BigNumber;
-      3: string;
-      4: {
+      3: BigNumber;
+      4: string;
+      5: {
         earnings1: BigNumber;
         earnings2: BigNumber;
         earnings3: BigNumber;
@@ -686,6 +688,7 @@ export class Pixel extends Contract {
       user: string,
       overrides?: CallOverrides
     ): Promise<{
+      canvas_: string;
       updates_: BigNumber;
       balance: BigNumber;
       supply: BigNumber;
@@ -704,11 +707,12 @@ export class Pixel extends Contract {
         4: number;
         5: number;
       };
-      0: BigNumber;
+      0: string;
       1: BigNumber;
       2: BigNumber;
-      3: string;
-      4: {
+      3: BigNumber;
+      4: string;
+      5: {
         earnings1: BigNumber;
         earnings2: BigNumber;
         earnings3: BigNumber;
@@ -1130,6 +1134,7 @@ export class Pixel extends Contract {
     user: string,
     overrides?: CallOverrides
   ): Promise<{
+    canvas_: string;
     updates_: BigNumber;
     balance: BigNumber;
     supply: BigNumber;
@@ -1148,11 +1153,12 @@ export class Pixel extends Contract {
       4: number;
       5: number;
     };
-    0: BigNumber;
+    0: string;
     1: BigNumber;
     2: BigNumber;
-    3: string;
-    4: {
+    3: BigNumber;
+    4: string;
+    5: {
       earnings1: BigNumber;
       earnings2: BigNumber;
       earnings3: BigNumber;
@@ -1172,6 +1178,7 @@ export class Pixel extends Contract {
     user: string,
     overrides?: CallOverrides
   ): Promise<{
+    canvas_: string;
     updates_: BigNumber;
     balance: BigNumber;
     supply: BigNumber;
@@ -1190,11 +1197,12 @@ export class Pixel extends Contract {
       4: number;
       5: number;
     };
-    0: BigNumber;
+    0: string;
     1: BigNumber;
     2: BigNumber;
-    3: string;
-    4: {
+    3: BigNumber;
+    4: string;
+    5: {
       earnings1: BigNumber;
       earnings2: BigNumber;
       earnings3: BigNumber;
@@ -1584,6 +1592,7 @@ export class Pixel extends Contract {
       user: string,
       overrides?: CallOverrides
     ): Promise<{
+      canvas_: string;
       updates_: BigNumber;
       balance: BigNumber;
       supply: BigNumber;
@@ -1602,11 +1611,12 @@ export class Pixel extends Contract {
         4: number;
         5: number;
       };
-      0: BigNumber;
+      0: string;
       1: BigNumber;
       2: BigNumber;
-      3: string;
-      4: {
+      3: BigNumber;
+      4: string;
+      5: {
         earnings1: BigNumber;
         earnings2: BigNumber;
         earnings3: BigNumber;
@@ -1626,6 +1636,7 @@ export class Pixel extends Contract {
       user: string,
       overrides?: CallOverrides
     ): Promise<{
+      canvas_: string;
       updates_: BigNumber;
       balance: BigNumber;
       supply: BigNumber;
@@ -1644,11 +1655,12 @@ export class Pixel extends Contract {
         4: number;
         5: number;
       };
-      0: BigNumber;
+      0: string;
       1: BigNumber;
       2: BigNumber;
-      3: string;
-      4: {
+      3: BigNumber;
+      4: string;
+      5: {
         earnings1: BigNumber;
         earnings2: BigNumber;
         earnings3: BigNumber;
