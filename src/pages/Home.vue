@@ -608,7 +608,7 @@ export default defineComponent({
                     localStorage.setItem("data", Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join(''))
                 }
                 this.loading = false
-                console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}))
+                //console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}))
             }
         },
         async buy() {
