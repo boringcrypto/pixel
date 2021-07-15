@@ -68,7 +68,7 @@
                 <span v-if="started">
                     <span v-if="!locked">
                         <strong>Creation Phase</strong><br>
-                        ends in {{ lockDiffDays }} days {{ lockDiffHours }} hours {{ lockDiffMinutes }} min {{ lockDiffSeconds }} sec
+                        ends in {{ lockDiffDays }} days {{ lockDiffHours }} hours {{ lockDiffMinutes }} min {{ lockDiffSeconds }} sec ({{ blocksUsed / 100 }}% owned)
                     </span>
                     <span v-else>
                         <strong>Canvas NFT Phase</strong><br>
@@ -110,7 +110,7 @@
             </div>
             <div class="status-bar">
                 <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 0.02 || 0.1 }} MATIC per pixel</p>
-                <p class="status-bar-field">{{ tooltipBlock?.owner ? "Owned" : "Unowned" }}</p>
+                <p class="status-bar-field">{{ tooltipBlock?.owner ? tooltipBlock?.owner.toLowerCase() == info.address.toLowerCase() ? "Owned by you!" : "Owned by other" : "Unowned" }}</p>
             </div>
         </div>        
         <img ref="preview" :style="selectionStyle" />
@@ -521,7 +521,8 @@ export default defineComponent({
         lockDiffHours(): number { return Math.floor(this.lockDiff / (60 * 60 * 1000)) % 24 },
         lockDiffMinutes(): number { return Math.floor(this.lockDiff / (60 * 1000)) % 60 },
         lockDiffSeconds(): number { return Math.floor(this.lockDiff / (1000)) % 60 },
-        referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero }
+        referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero },
+        blocksUsed(): number { return this.blocks.filter(b => b.owner).length }
     },
     watch: {
         'info.address': function() {
