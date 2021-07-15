@@ -564,7 +564,9 @@ export default defineComponent({
                     ctx.clearRect(0, 0, 1000, 1000)
                 }
                 if (this.loading) { return; }
-                this.loading = true
+                if (currentUpdatesCount > this.updateIndex) {
+                    this.loading = true
+                }
                 while (currentUpdatesCount > this.updateIndex) {
                     console.log("Getting", this.updateIndex, currentUpdatesCount)
                     let updates = [...new Set((await p.getUpdates(this.updateIndex, 1000)).map(bn => bn.toNumber()))]
