@@ -30,7 +30,8 @@
             <td style="text-align: left; vertical-align: top">
                 <img alt="Pixel Inc Logo" src="../assets/pixelIncLogo.png" height="100" /><br>
                 An experiment in collaborative 'art'<br>
-                and a tribute to web design of the past.
+                and a tribute to web design of the past.<br>
+                <a href="https://boringcrypto.medium.com/pixel-inc-artvertising-nft-1c1ddaa16f32" style="color: #ddd">What is this?!?</a>
             </td>
             <td v-if="started && !locked" style="vertical-align: bottom">
                 <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
