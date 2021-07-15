@@ -244,6 +244,7 @@ interface PixelInterface extends ethers.utils.Interface {
     "MLMAddRep(address,address)": EventFragment;
     "MLMEarn(address,uint128,uint8)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
+    "PixelBlockTransfer(address,address,uint256)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
   };
 
@@ -251,6 +252,7 @@ interface PixelInterface extends ethers.utils.Interface {
   getEvent(nameOrSignatureOrTopic: "MLMAddRep"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "MLMEarn"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "PixelBlockTransfer"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
 }
 
@@ -1779,6 +1781,8 @@ export class Pixel extends Contract {
       previousOwner: string | null,
       newOwner: string | null
     ): EventFilter;
+
+    PixelBlockTransfer(from: null, to: null, pricePerPixel: null): EventFilter;
 
     Transfer(
       _from: string | null,

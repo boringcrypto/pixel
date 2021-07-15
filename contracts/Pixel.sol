@@ -20,6 +20,23 @@ import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
 
+interface ISushiSwapFactory {
+    function getPair(address tokenA, address tokenB) external view returns (address pair);
+}
+
+interface ISushiSwapRouter {
+    function WETH() external pure returns (address);
+    function factory() external pure returns (ISushiSwapFactory);
+    function addLiquidityETH(
+        address token,
+        uint amountTokenDesired,
+        uint amountTokenMin,
+        uint amountETHMin,
+        address to,
+        uint deadline
+    ) external payable returns (uint amountToken, uint amountETH, uint liquidity);
+}
+
 // solhint-disable avoid-low-level-calls
 // solhint-disable
 
@@ -259,12 +276,23 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
 
+    event PixelBlockTransfer(address from, address to, uint256 pricePerPixel);
+
     string public constant symbol = "PIXEL";
     string public constant name = "Pixel";
     uint8 public constant decimals = 18;
     address public canvas;
 
     uint256 private constant START_BLOCK_PRICE = 10e18; // Price starts at 0.1 MATIC/pixel = 10 MATIC/block
+    
+    // 50.000 PIXEL tokens will be minted for the initial AMM pool
+    // To keep this fair, we set the price at DOUBLE the cost (because the PIXEL tokens are free to the deployer)
+    // Cost of 1 PIXEL token at launch will be 0.1 MATIC / 1.4 (due to ambassador program) = 0.0714
+    // So price should be set at twice that: 0.1428
+    // For 50,000 PIXELs = 50,000 * 0.1428 ≈ 7000 (rounded down to the nearest thousand)
+    uint256 private constant SUSHI_PIXEL_BALANCE = 50000e18;
+    // uint256 private constant SUSHI_MATIC_BALANCE = 7000e18;
+    // Will be added manually to SushiSwap, ran out of time to put it in the contract
 
     struct BlockLink {
         string url; // url for this block (should be < 256 characters)
@@ -294,12 +322,14 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
     uint256 public constant LOCK_TIMESTAMP = START_TIMESTAMP + 2 weeks;
     uint256[] public updates;
 
-    constructor() public {
+    constructor() public payable {
         // Set link[0] to blank
         link.push(BlockLink({
             url: "",
             description: ""
         }));
+
+        _mint(msg.sender, SUSHI_PIXEL_BALANCE); // Send PIXELs to the deployer to create SushiSwap pool (ran out of time to automate this)
     }
 
     function mintCanvas() external {
@@ -369,7 +399,8 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
             uint256 blockNumber = blockNumbers[i];
             // Forward a maximum of 20000 gas to the previous owner for accepting the refund to avoid griefing attacks
             bool success;
-            (success, ) = blk[blockNumber].owner.call{value: blk[blockNumber].lastPrice, gas: 20000}("");
+            address previousOwner = blk[blockNumber].owner;
+            (success, ) = previousOwner.call{value: blk[blockNumber].lastPrice, gas: 20000}("");
 
             Block memory newBlock;
             newBlock.owner = msg.sender;
@@ -379,6 +410,8 @@ contract Pixel is ERC20WithSupply, MLM, BoringOwnable, BoringBatchable {
             blk[blockNumber] = newBlock;
 
             updates.push(blockNumber);
+
+            emit PixelBlockTransfer(previousOwner, msg.sender, newBlock.lastPrice);
         }
 
         // Mint a PIXEL token for each pixel bought

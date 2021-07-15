@@ -287,7 +287,7 @@ import { BigNumber } from "@ethersproject/bignumber"
 import { nextTick } from "process"
 import Decimal from "decimal.js-light"
 import { ethers } from "ethers"
-import { constants } from "../constants/test"
+import { constants } from "../constants/live"
 // @ts-ignore
 import clippy from 'clippyjs'
 
