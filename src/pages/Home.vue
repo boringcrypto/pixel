@@ -562,8 +562,9 @@ export default defineComponent({
                     this.updateIndex = 0
                     ctx.clearRect(0, 0, 1000, 1000)
                 }
+                if (this.loading) { return; }
+                this.loading = true
                 while (currentUpdatesCount > this.updateIndex) {
-                    this.loading = true
                     console.log("Getting", this.updateIndex, currentUpdatesCount)
                     let updates = [...new Set((await p.getUpdates(this.updateIndex, 1000)).map(bn => bn.toNumber()))]
                     this.updateIndex = currentUpdatesCount - this.updateIndex > 1000 ? this.updateIndex + 1000 : currentUpdatesCount
@@ -592,17 +593,18 @@ export default defineComponent({
                             }
                         })
                     }
-                    if (CompressionStream) {
-                        const byteArray = new TextEncoder().encode(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}));
-                        const cs = new CompressionStream("gzip");
-                        const writer = cs.writable.getWriter();
-                        writer.write(byteArray);
-                        writer.close();
-                        let compressed = await new Response(cs.readable).arrayBuffer();
-                        localStorage.setItem("data", Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join(''))
-                    }
+                }
+                if (CompressionStream) {
+                    const byteArray = new TextEncoder().encode(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}));
+                    const cs = new CompressionStream("gzip");
+                    const writer = cs.writable.getWriter();
+                    writer.write(byteArray);
+                    writer.close();
+                    let compressed = await new Response(cs.readable).arrayBuffer();
+                    localStorage.setItem("data", Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join(''))
                 }
                 this.loading = false
+                console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}))
             }
         },
         async buy() {
