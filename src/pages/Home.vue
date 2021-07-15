@@ -109,7 +109,7 @@
                 </span>
             </div>
             <div class="status-bar">
-                <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 2 || 0.1 }} MATIC per pixel</p>
+                <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 0.02 || 0.1 }} MATIC per pixel</p>
                 <p class="status-bar-field">{{ tooltipBlock?.owner ? "Owned" : "Unowned" }}</p>
             </div>
         </div>        
