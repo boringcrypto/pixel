@@ -271,8 +271,11 @@
     <div v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()">
         <hr>
         Admin<br>
+        Edit mode: {{ edit ? 'ON' : 'OFF'}}<br>
         <button @click="withdraw">Withdraw MATIC</button>
         <button @click="mint">Mint CANVAS NFT</button>
+        <button @click="edit=!edit">Edit mode</button>
+        <button @click="logBlocks">Log cache</button>
     </div>
 </template>
 
@@ -394,7 +397,8 @@ export default defineComponent({
             startTimeStamp: number, lockTimeStamp: number, matic: ethers.providers.JsonRpcProvider | null, blocks: Block[], pollInfo: PollInfo | null, updateIndex: number, 
             buying: boolean, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, mouseBelowHalf: boolean, mx: number, my: number,
             selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, 
-            blockNumbers: number[], pixels: string[], cost: BigNumber, gas: BigNumber, gasPrice: BigNumber, duplicateBlocks: number, url: string, description: string, now: number, agent: any } {
+            blockNumbers: number[], pixels: string[], cost: BigNumber, gas: BigNumber, gasPrice: BigNumber, duplicateBlocks: number, url: string, description: string, now: number, agent: any,
+            edit: boolean } {
         return {
             loading: false,
             startTimeStamp: 0,
@@ -430,6 +434,7 @@ export default defineComponent({
             now: Date.now(),
 
             agent: null,
+            edit: false
         }
     },
     async created() {
@@ -536,7 +541,7 @@ export default defineComponent({
         },
         async newBlock() {
             let ctx = this.canvas?.getContext("2d")
-            if (ctx) {
+            if (ctx && !this.edit) {
                 let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0])
                 this.gasPrice = await provider.getGasPrice()
                 let p = PixelFactory.connect(constants.pixel, provider)
@@ -608,21 +613,47 @@ export default defineComponent({
                     localStorage.setItem("data", Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join(''))
                 }
                 this.loading = false
-                //console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}))
             }
         },
         async buy() {
             this.image = null
             this.selected = false
             this.buying = false
-            if (window.provider) {
-                const signer = window.provider?.getSigner(this.info.address)
-                let p = PixelFactory.connect(constants.pixel, signer)
-                for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
-                    let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
-                    let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
-                    let cost = await p["getCost(uint256[])"](blockNumbers)
-                    p["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, this.referrerClean || ethers.constants.AddressZero, { value: cost })
+            if (!this.edit) {
+                if (window.provider) {
+                    const signer = window.provider?.getSigner(this.info.address)
+                    let p = PixelFactory.connect(constants.pixel, signer)
+                    for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
+                        let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
+                        let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
+                        let cost = await p["getCost(uint256[])"](blockNumbers)
+                        p["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, this.referrerClean || ethers.constants.AddressZero, { value: cost })
+                    }
+                }
+            } else {
+                let ctx = this.canvas?.getContext("2d")
+
+                for (let n = 0; n < this.blockNumbers.length; n++) {
+                    let blockNumber = this.blockNumbers[n]
+                    let pixels = this.pixels[n]
+                    console.log(blockNumber, pixels)
+                    this.blocks[blockNumber].url = "https://www.youtube.com/watch?v=4q1dgn_C0AU"
+                    this.blocks[blockNumber].description = "Don't worry, be happy"
+                    this.blocks[blockNumber].pixels = pixels
+
+                    if (pixels && ctx) {
+                        let data: ImageData = ctx.createImageData(10, 10)
+                        for(let i = 0; i < 100; i++) {
+                            let hex = pixels.substr(2 + i * 6, 2)
+                            data.data[i * 4] = BigNumber.from("0x" + hex).toNumber()
+                            hex = pixels.substr(4 + i * 6, 2)
+                            data.data[i * 4 + 1] = BigNumber.from("0x" + hex).toNumber()
+                            hex = pixels.substr(6 + i * 6, 2)
+                            data.data[i * 4 + 2] = BigNumber.from("0x" + hex).toNumber()
+                            data.data[i * 4 + 3] = 255
+                        }
+                        ctx.putImageData(data, (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
+                    }
                 }
             }
         },
@@ -674,6 +705,9 @@ export default defineComponent({
         },
         agentDo(action: string) {
             this.agent.play(action)
+        },
+        logBlocks() { 
+            console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}))
         }
     },
     mounted() {
