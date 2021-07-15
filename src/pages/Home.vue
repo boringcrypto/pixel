@@ -88,7 +88,7 @@
         </tr>
     </table>
 
-    <div id="selectionArea" :style="'position: relative; width: 1000px; height: 1000px; background-color: rgb(40, 95, 170); border: 1px solid rgb(169, 216,235); margin-left: auto; margin-right: auto;' + (tooltip ? 'cursor: pointer' : '')">
+    <div id="selectionArea" :style="'position: relative; width: 1000px; height: 1000px; background-color: rgb(' + (image && !selected ? '20, 47, 85' : '40, 95, 170') + '); border: 1px solid rgb(169, 216,235); margin-left: auto; margin-right: auto;' + (tooltip ? 'cursor: pointer' : '')">
         <canvas id="canvas" width="1000" height="1000" />
         <div v-if="loading" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
             <div class="title-bar">
