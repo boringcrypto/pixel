@@ -277,6 +277,7 @@
         <button @click="mint">Mint CANVAS NFT</button>
         <button @click="edit=!edit">Edit mode</button>
         <button @click="logBlocks">Log cache</button>
+        <button @click="reload">Reload</button>
     </div>
 </template>
 
@@ -384,6 +385,10 @@ function cleanURI(uri: string) {
     return "<invalid URL>"
 }
 
+function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export default defineComponent({
     name: "Home",
     props: {
@@ -395,7 +400,7 @@ export default defineComponent({
     },
     data(): { 
             loading: boolean,
-            startTimeStamp: number, lockTimeStamp: number, matic: ethers.providers.JsonRpcProvider | null, blocks: Block[], pollInfo: PollInfo | null, updateIndex: number, 
+            startTimeStamp: number, lockTimeStamp: number, matic: ethers.providers.JsonRpcProvider | null, blocks: Block[], pollInfo: PollInfo | null, updateIndex: number, version: number,
             buying: boolean, image: HTMLImageElement | null, canvas: HTMLCanvasElement | null, mouseBelowHalf: boolean, mx: number, my: number,
             selecting: boolean, selected: boolean, startSelectX: number, startSelectY: number, endSelectX: number, endSelectY: number, 
             blockNumbers: number[], pixels: string[], cost: BigNumber, gas: BigNumber, gasPrice: BigNumber, duplicateBlocks: number, url: string, description: string, now: number, agent: any,
@@ -409,6 +414,7 @@ export default defineComponent({
             blocks: [],
             pollInfo: null,
             updateIndex: 0,
+            version: 0,
 
             canvas: null,
 
@@ -455,9 +461,10 @@ export default defineComponent({
             let data = JSON.parse(result)
             this.blocks = data.blocks
             this.updateIndex = data.updateIndex
+            this.version = data.version || 0
         }
 
-        if (this.updateIndex < Cache.updateIndex) {
+        if (this.version < Cache.version || this.updateIndex < Cache.updateIndex) {
             this.blocks = Cache.blocks
             this.updateIndex = Cache.updateIndex
         }
@@ -571,19 +578,41 @@ export default defineComponent({
                     localStorage.removeItem("data")
                     for (let i = 0; i < 10000; i++) { this.blocks.push({owner: "", lastPrice: 0, url: "", description: "", pixels: "" }) }
                     this.updateIndex = 0
+                    this.version = 0
                     ctx.clearRect(0, 0, 1000, 1000)
                 }
                 if (this.loading) { return; }
                 if (currentUpdatesCount > this.updateIndex) {
                     this.loading = true
                 }
+                let updateBlockSize = 1000
                 while (currentUpdatesCount > this.updateIndex) {
                     console.log("Getting", this.updateIndex, currentUpdatesCount)
-                    let updates = [...new Set((await p.getUpdates(this.updateIndex, 1000)).map(bn => bn.toNumber()))]
-                    this.updateIndex = currentUpdatesCount - this.updateIndex > 1000 ? this.updateIndex + 1000 : currentUpdatesCount
+                    let success = false
+                    let updates: any[] = []
+                    while (!success) {
+                        try {
+                            updates = [...new Set((await p.getUpdates(this.updateIndex, updateBlockSize)).map(bn => bn.toNumber()))]
+                            success = true
+                        } catch {
+                            await sleep(10000)
+                        }
+                    }
+
+                    this.updateIndex = this.updateIndex + updates.length
                     while (updates.length) {
                         console.log(updates.length, "left")
-                        let updatedBlocks = await p.getBlocks(updates.splice(0, 200))
+                        let success = false
+                        let updatedBlocks: any[] = []
+                        while (!success) {
+                            try {
+                                updatedBlocks = await p.getBlocks(updates.splice(0, 100))
+                                success = true
+                            } catch {
+                                await sleep(10000)
+                            }
+                        }
+
                         updatedBlocks.forEach(block => {
                             this.blocks[block.number].owner = block.owner
                             this.blocks[block.number].lastPrice = block.lastPrice.toDec(18).toNumber()
@@ -711,7 +740,18 @@ export default defineComponent({
             this.agent.play(action)
         },
         logBlocks() { 
-            console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex}))
+            console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex, version: this.version + 1}))
+        },
+        reload() {
+            let ctx = this.canvas?.getContext("2d")
+            if (ctx) {
+                localStorage.removeItem("data")
+                for (let i = 0; i < 10000; i++) { this.blocks.push({owner: "", lastPrice: 0, url: "", description: "", pixels: "" }) }
+                this.updateIndex = 0
+                this.version = 0
+                ctx.clearRect(0, 0, 1000, 1000)
+                this.newBlock()
+            }
         }
     },
     mounted() {
