@@ -746,6 +746,7 @@ export default defineComponent({
             let ctx = this.canvas?.getContext("2d")
             if (ctx) {
                 localStorage.removeItem("data")
+                this.blocks = []
                 for (let i = 0; i < 10000; i++) { this.blocks.push({owner: "", lastPrice: 0, url: "", description: "", pixels: "" }) }
                 this.updateIndex = 0
                 this.version = 0
