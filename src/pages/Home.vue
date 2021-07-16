@@ -556,7 +556,7 @@ export default defineComponent({
         },
         async newBlock() {
             let ctx = this.canvas?.getContext("2d")
-            if (ctx && !this.edit) {
+            if (ctx && !this.edit && false) {
                 let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0])
                 this.gasPrice = await provider.getGasPrice()
                 let p = PixelFactory.connect(constants.pixel, provider)
