@@ -69,7 +69,8 @@
                 <span v-if="started">
                     <span v-if="!locked">
                         <strong>Creation Phase</strong><br>
-                        ends in {{ lockDiffDays }} days {{ lockDiffHours }} hours {{ lockDiffMinutes }} min {{ lockDiffSeconds }} sec ({{ blocksUsed / 100 }}% owned)
+                        ends in {{ lockDiffDays }} days {{ lockDiffHours }} hours {{ lockDiffMinutes }} min {{ lockDiffSeconds }} sec<br>
+                        {{ blocksUsed / 100 }}% owned, {{ blocksLvl2 / 100 }}% lvl2, {{ blocksLvl3 / 100 }}% lvl3, {{ blocksLvl4 / 100 }}% lvl4
                     </span>
                     <span v-else>
                         <strong>Canvas NFT Phase</strong><br>
@@ -528,7 +529,10 @@ export default defineComponent({
         lockDiffMinutes(): number { return Math.floor(this.lockDiff / (60 * 1000)) % 60 },
         lockDiffSeconds(): number { return Math.floor(this.lockDiff / (1000)) % 60 },
         referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero },
-        blocksUsed(): number { return this.blocks.filter(b => b.owner).length }
+        blocksUsed(): number { return this.blocks.filter(b => b.owner).length },
+        blocksLvl2(): number { return this.blocks.filter(b => b.lastPrice == 20).length },
+        blocksLvl3(): number { return this.blocks.filter(b => b.lastPrice == 40).length },
+        blocksLvl4(): number { return this.blocks.filter(b => b.lastPrice == 80).length },
     },
     watch: {
         'info.address': function() {
