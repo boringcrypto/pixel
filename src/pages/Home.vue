@@ -34,9 +34,13 @@
                 <a href="https://boringcrypto.medium.com/pixel-inc-artvertising-nft-1c1ddaa16f32" style="color: #ddd">What is this?!?</a>
             </td>
             <td v-if="started && !locked" style="vertical-align: bottom">
-                <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
+                <!--<button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
                 <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
-                <button v-if="!wrongNetwork && info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>
+                <button v-if="!wrongNetwork && info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>-->
+                <button class="upload-button">Issue with the smart contract found :(</button><br>
+                The canvas will be frozen for now and a snapshot of the PIXEL token balances is taken. All will be redeployed and restored as is.
+                A more detailed post coming soon. No need to do anything, no exploit has happened and all will be restored as it is now.<br><br>
+                We have safely withdraw the MATIC from the contract and the liquidity from the SushiSwap LP pool.
             </td>
             <td style="text-align: right">
                 <span v-if="info.chainId == 0">
@@ -576,6 +580,7 @@ export default defineComponent({
                 let currentUpdatesCount = this.pollInfo.updates.toNumber()
                 if (currentUpdatesCount < this.updateIndex) {
                     localStorage.removeItem("data")
+                    this.blocks = []
                     for (let i = 0; i < 10000; i++) { this.blocks.push({owner: "", lastPrice: 0, url: "", description: "", pixels: "" }) }
                     this.updateIndex = 0
                     this.version = 0
@@ -652,7 +657,7 @@ export default defineComponent({
             this.image = null
             this.selected = false
             this.buying = false
-            if (!this.edit) {
+            /*if (!this.edit) {
                 if (window.provider) {
                     const signer = window.provider?.getSigner(this.info.address)
                     let p = PixelFactory.connect(constants.pixel, signer)
@@ -688,7 +693,7 @@ export default defineComponent({
                         ctx.putImageData(data, (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
                     }
                 }
-            }
+            }*/
         },
         load(file: Blob) {
             const self = this
