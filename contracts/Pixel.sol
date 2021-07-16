@@ -235,11 +235,11 @@ contract MLM {
     event MLMAddRep(address rep, address upline);
     event MLMEarn(address rep, uint128 amount, uint8 lvl);
 
-    function _setUpline(addres rep, address upline_) {
+    function _setUpline(address rep, address upline_) internal {
         upline[rep] = upline_;
     }
 
-    function _setDownline(addres rep, uint128 earnings1, uint128 earnings2, uint128 earnings3, uint32 tier1, uint32 tier2, uint32 tier3) {
+    function _setDownline(address rep, uint128 earnings1, uint128 earnings2, uint128 earnings3, uint32 tier1, uint32 tier2, uint32 tier3) internal {
         downline[rep] = DownlineStats({
             earnings1: earnings1,
             earnings2: earnings2,
@@ -287,7 +287,25 @@ contract MLM {
     }
 }
 
-contract PixelV2 is ERC20WithSupply, MLM, BoringOwnable {
+contract ReentrancyGuard {
+    uint256 private constant _NOT_ENTERED = 1;
+    uint256 private constant _ENTERED = 2;
+
+    uint256 private _status;
+
+    constructor() internal {
+        _status = _NOT_ENTERED;
+    }
+
+    modifier nonReentrant() {
+        require(_status != _ENTERED, 'ReentrancyGuard: reentrant call');
+        _status = _ENTERED;
+        _;
+        _status = _NOT_ENTERED;
+    }
+}
+
+contract PixelV2 is ERC20WithSupply, MLM, BoringOwnable, ReentrancyGuard {
     using BoringMath for uint256;
     using BoringERC20 for IERC20;
 
@@ -478,6 +496,56 @@ contract PixelV2 is ERC20WithSupply, MLM, BoringOwnable {
         _mint(0xF82a5d0168cc93e63dc217314AdB87f15891d124, 100000000000000000000);
         _mint(0xfD5A25ef7396384C2D43645f32609BC869c36208, 97800000000000000000000);
         _mint(0xfEdcBda26763eF4660d5204F4252f2A9B1276D4a, 200000000000000000000);
+
+        _setUpline(0x30a0911731f6eC80c87C4b99f27c254639A3Abcd, 0x256D49d87cbb877D26E2Bcf2bF0A40D26bdfB5d4);
+        _setDownline(0x30a0911731f6eC80c87C4b99f27c254639A3Abcd, 1960000000000000000000, 0, 0, 3, 0, 0);
+        _setDownline(0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7, 320000000000000000000, 0, 0, 8, 0, 0);
+        _setUpline(0xA03DEE508d09Ba9401a661F154036B36328e0F0C, 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E);
+        _setDownline(0xA03DEE508d09Ba9401a661F154036B36328e0F0C, 4720000000000000000000, 0, 0, 6, 0, 0);
+        _setUpline(0x1E4135cF6E2B9feeBD52C6e90817fb19cFe294b9, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setDownline(0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E, 14480000000000000000000, 2440000000000000000000, 490000000000000000000, 7, 10, 3);
+        _setUpline(0xf07504A96601b35Dd702b07EcC57B2b169866f57, 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E);
+        _setUpline(0xaf1ca20615F84c48782F2f23b3cC737Db9c3514c, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setUpline(0x7f3D32C56b94a9B7878fdfAC4F40Aaa2A6E11EdF, 0xe61a0809eF3f1d2D695555413ac354284BF23915);
+        _setUpline(0x256D49d87cbb877D26E2Bcf2bF0A40D26bdfB5d4, 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E);
+        _setDownline(0x256D49d87cbb877D26E2Bcf2bF0A40D26bdfB5d4, 660000000000000000000, 980000000000000000000, 0, 1, 3, 0);
+        _setDownline(0x1EF5526ee1A6D8c596cce90e774A2c41372cC8cD, 1000000000000000000000, 0, 0, 1, 0, 0);
+        _setUpline(0x528d4e4E0dbF071eC23013f06D8487BaD5A8a68B, 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E);
+        _setUpline(0xDf547EaB8944D9Ef06475dF8eEe372B9808f425E, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setUpline(0x51c25230335472236853676290062c8C7a0825b6, 0xA03DEE508d09Ba9401a661F154036B36328e0F0C);
+        _setUpline(0x91B12c04Ba95cede8E7cDD1a17D961cbdfd2e00b, 0xA03DEE508d09Ba9401a661F154036B36328e0F0C);
+        _setUpline(0x3D9B0A7ef1CcEAda457001A6d51F28FF61E39904, 0x496ea957960Bf9A2BBC1D3c114EaA124e07D0543);
+        _setDownline(0x3D9B0A7ef1CcEAda457001A6d51F28FF61E39904, 120000000000000000000, 10000000000000000000, 25000000000000000000, 1, 1, 0);
+        _setUpline(0x7bD8A74a0B06FA03A9C2275F58081a7CCf549f16, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setDownline(0x897656B1Fb6C3688e48e1DD8259f7E092364754d, 20000000000000000000, 0, 0, 1, 0, 0);
+        _setUpline(0xa0bf4E5640e5db6FA82967d2C160e35a9a28AE83, 0xe61a0809eF3f1d2D695555413ac354284BF23915);
+        _setDownline(0xe61a0809eF3f1d2D695555413ac354284BF23915, 3400000000000000000000, 0, 0, 2, 0, 0);
+        _setUpline(0x218d75b17f491793a96ab4326c7875950359a80C, 0xA03DEE508d09Ba9401a661F154036B36328e0F0C);
+        _setUpline(0xbf2116D0a79da0E5710Df8AB00eb20415bCA94C8, 0x131Ee3bE2E3803Bf9E8976dDf0306236f001B7F2);
+        _setUpline(0x131Ee3bE2E3803Bf9E8976dDf0306236f001B7F2, 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E);
+        _setDownline(0x131Ee3bE2E3803Bf9E8976dDf0306236f001B7F2, 600000000000000000000, 0, 0, 3, 0, 0);
+        _setUpline(0x54D925F320400139f9F2925767F1ec68B027e7C0, 0x1EF5526ee1A6D8c596cce90e774A2c41372cC8cD);
+        _setUpline(0x1F427A6FCdb95A7393C58552093e10A932890FA8, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setUpline(0x43d20d5efA78Ff0e465DDa2e58109F9fb3A2becE, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setUpline(0xF82a5d0168cc93e63dc217314AdB87f15891d124, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setUpline(0xc572c95996653ae98Ec3A59d9a511eDA142b98C1, 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E);
+        _setUpline(0x8fB07b21383d331F3752A7590b0cfEAc85514A1F, 0xA03DEE508d09Ba9401a661F154036B36328e0F0C);
+        _setUpline(0x0b981d98e857C888E00D2C494D24DC16a12F8f3A, 0x131Ee3bE2E3803Bf9E8976dDf0306236f001B7F2);
+        _setUpline(0x357dfdC34F93388059D2eb09996d80F233037cBa, 0x30a0911731f6eC80c87C4b99f27c254639A3Abcd);
+        _setUpline(0xBF912CB4d1c3f93e51622fAe0bfa28be1B4b6C6c, 0x30a0911731f6eC80c87C4b99f27c254639A3Abcd);
+        _setUpline(0x496ea957960Bf9A2BBC1D3c114EaA124e07D0543, 0x3D9B0A7ef1CcEAda457001A6d51F28FF61E39904);
+        _setDownline(0x496ea957960Bf9A2BBC1D3c114EaA124e07D0543, 20000000000000000000, 50000000000000000000, 5000000000000000000, 1, 1, 1);
+        _setUpline(0x9EFb6D49Fd5496626E80Ad0B07017744aE9A0efA, 0xC858Dd4F2a80a859D491A16BeEe6708a6743bfb7);
+        _setDownline(0x28c24f2Da9B6E517968300Eb1A4F4aE1B235238E, 20000000000000000000, 0, 0, 1, 0, 0);
+        _setUpline(0x2493C86B62E8ff26208399144817EF2898c59460, 0xA03DEE508d09Ba9401a661F154036B36328e0F0C);
+        _setUpline(0x4fD95c6FA765e64eC9313E465F4D2B88Cbf8dEaa, 0xA03DEE508d09Ba9401a661F154036B36328e0F0C);
+        _setUpline(0x66AB3988D11B493cBe632C7d4471A68350a786e9, 0x131Ee3bE2E3803Bf9E8976dDf0306236f001B7F2);
+        _setUpline(0xfEdcBda26763eF4660d5204F4252f2A9B1276D4a, 0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E);
+        _setUpline(0xb3D1e41F84AcD0E77F83473aa62fc8560C2A3c0C, 0x28c24f2Da9B6E517968300Eb1A4F4aE1B235238E);
+        _setUpline(0x9D0b92468Ef23D156F1bd5042Fe0B45C80a4418e, 0x30a0911731f6eC80c87C4b99f27c254639A3Abcd);
+        _setUpline(0xa9f078B3b6DD6C04308f19DEF394b6D5a1B8b732, 0x897656B1Fb6C3688e48e1DD8259f7E092364754d);
+        _setUpline(0x53033C9697339942256845dD4d428085eC7261B8, 0x3c5Aac016EF2F178e8699D6208796A2D67557fe2);
+        _setDownline(0x3c5Aac016EF2F178e8699D6208796A2D67557fe2, 20000000000000000000, 0, 0, 1, 0, 0);
     }
 
     function mintCanvas() external {
@@ -557,14 +625,12 @@ contract PixelV2 is ERC20WithSupply, MLM, BoringOwnable {
         }
     }
 
-    function initMLM()
-
     function setBlocks(
         uint256[] calldata blockNumbers,
         uint32 linkNumber,
         bytes[] calldata pixels,
         address referrer
-    ) public payable onlyCreationPhase() {
+    ) public payable onlyCreationPhase() nonReentrant() {
         // This error may happen when you calculate the correct cost, but someone buys one of your blocks before your transaction goes through
         // This is tested first to reduce wasted gas in case of failure
         uint256 cost = getCost(blockNumbers);
