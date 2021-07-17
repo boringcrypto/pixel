@@ -12,6 +12,6 @@ let constants = {
         rpcUrls: ['https://rpc-mumbai.maticvigil.com/'],
         blockExplorerUrls: ['https://mumbai.polygonscan.com/'],
     },
-    pixel: "0xdf6064D3078dd0Bd133Ec7Ba87dEBd4629831fe5"
+    pixel: "0x390d01b1437029C0CD21586B9Bfe3C0fDBAf8c66"
 }
 export { constants }

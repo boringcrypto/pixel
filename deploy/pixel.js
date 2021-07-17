@@ -5,7 +5,7 @@ console.log("Deploying")
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy } = deployments
     const { deployer } = await getNamedAccounts()
-    await deploy("Pixel", {
+    await deploy("PixelV2", {
         from: deployer,
         args: [],
         log: true,

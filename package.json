@@ -11,7 +11,7 @@
         "pretty-quick": "pretty-quick",
         "coverage": "hardhat coverage",
         "flat": "hardhat flat .\\contracts\\Pixel.sol --output .\\contracts\\PixelFlat.sol",
-        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/Pixel.sol/Pixel.json\"",
+        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/Pixel.sol/PixelV2.json\"",
         "build": "vue-tsc --noEmit && vite build",
         "dev": "hardhat compile & yarn ts & concurrently \"hardhat node\" \"vite\""
     },

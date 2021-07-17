@@ -1,4 +1,4 @@
-import * as PixelDeployment from "../../deployments/localhost/Pixel.json"
+import * as PixelDeployment from "../../deployments/localhost/PixelV2.json"
 
 let constants = {
     chainId: 31337,

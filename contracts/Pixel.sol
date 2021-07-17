@@ -18,7 +18,6 @@ import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
 import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringBatchable.sol";
 
 interface ISushiSwapFactory {
     function getPair(address tokenA, address tokenB) external view returns (address pair);
@@ -351,8 +350,8 @@ contract PixelV2 is ERC20WithSupply, MLM, BoringOwnable, ReentrancyGuard {
     BlockLink[] public link;
     // data is organized in blocks of 10x10. There are 100x100 blocks. Base is 0 and counting goes left to right, then top to bottom.
     Block[10000] public blk;
-    uint256 public constant START_TIMESTAMP = 1626368400;
-    uint256 public constant LOCK_TIMESTAMP = START_TIMESTAMP + 2 weeks;
+    uint256 public constant START_TIMESTAMP = 1626490000;
+    uint256 public constant LOCK_TIMESTAMP = 1627578000;
     uint256[] public updates;
 
     constructor() public payable {
@@ -594,34 +593,30 @@ contract PixelV2 is ERC20WithSupply, MLM, BoringOwnable, ReentrancyGuard {
 
     function initBlocks(
         uint256[] calldata blockNumbers,
-        string calldata url,
-        string calldata description,
+        string[] calldata url,
+        string[] calldata description,
         bytes[] calldata pixels,
-        address blockOwner
+        uint128[] calldata lastPrice,
+        address[] calldata blockOwner
     ) public onlyOwner {
         require(block.timestamp < START_TIMESTAMP, "Already started");
-        BlockLink memory newLink;
-        newLink.url = url;
-        newLink.description = description;
-        uint32 linkNumber = link.length.to32();
-        link.push(newLink);
 
         for (uint256 i = 0; i < blockNumbers.length; i++) {
+            BlockLink memory newLink;
+            newLink.url = url[i];
+            newLink.description = description[i];
+            uint32 linkNumber = link.length.to32();
+            link.push(newLink);
+
             uint256 blockNumber = blockNumbers[i];
 
             Block memory newBlock;
-            newBlock.owner = blockOwner;
-            newBlock.lastPrice = getCost(blockNumber).to128();
+            newBlock.owner = blockOwner[i];
             newBlock.link = linkNumber;
             newBlock.pixels = pixels[i];
+            newBlock.lastPrice = lastPrice[i];
             blk[blockNumber] = newBlock;
-        }
-    }
-
-    function initUpdates(uint256 start, uint256 end) public onlyOwner {
-        require(block.timestamp < START_TIMESTAMP, "Already started");
-        for (uint256 i = start; i <= end; i++) {
-            updates.push(i);
+            updates.push(blockNumber);
         }
     }
 
