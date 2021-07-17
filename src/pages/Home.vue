@@ -34,13 +34,9 @@
                 <a href="https://boringcrypto.medium.com/pixel-inc-artvertising-nft-1c1ddaa16f32" style="color: #ddd">What is this?!?</a>
             </td>
             <td v-if="started && !locked" style="vertical-align: bottom">
-                <!--<button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
+                <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
                 <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
-                <button v-if="!wrongNetwork && info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>-->
-                <button class="upload-button">Issue with the smart contract found :(</button><br>
-                The canvas will be frozen for now and a snapshot of the PIXEL token balances is taken. All will be redeployed and restored as is.
-                A more detailed post coming soon. No need to do anything, no exploit has happened and all will be restored as it is now.<br><br>
-                We have safely withdraw the MATIC from the contract and the liquidity from the SushiSwap LP pool.
+                <button v-if="!wrongNetwork && info.address" @click="buying = true" class="upload-button">Upload your own pixels</button>
             </td>
             <td style="text-align: right">
                 <span v-if="info.chainId == 0">
@@ -283,10 +279,6 @@
         <button @click="logBlocks">Log cache</button>
         <button @click="reload">Reload</button>
         <button @click="getInfo">Info</button><br>
-        <br>
-        <input type="text" v-model="mnemonic" />
-        <button @click="upload">Go!</button><br><br>
-        {{ updateIndex }}
     </div>
 </template>
 
@@ -297,13 +289,13 @@
 import {defineComponent, PropType} from "@vue/runtime-core"
 import {ProviderInfo} from "../components/Web3.vue"
 import * as Cache from "../cache.json"
-import * as Snapshot from "../snapshot.json"
+//import * as Snapshot from "../snapshot.json"
 import { PixelV2Factory } from "../../types/ethers-contracts"
 import { BigNumber } from "@ethersproject/bignumber"
 import { nextTick } from "process"
 import Decimal from "decimal.js-light"
 import { ethers } from "ethers"
-import { constants } from "../constants/test"
+import { constants } from "../constants/live"
 // @ts-ignore
 import clippy from 'clippyjs'
 
@@ -475,7 +467,6 @@ export default defineComponent({
             this.updateIndex = data.updateIndex
             this.version = data.version || 0
         }
-        console.log(this.blocks.length, this.updateIndex, this.version)
 
         if (this.version < Cache.version || this.updateIndex < Cache.updateIndex) {
             this.blocks = Cache.blocks
@@ -561,7 +552,7 @@ export default defineComponent({
         }
     },
     methods: {
-        async upload() {
+/*        async upload() {
             let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0])
             let wallet = ethers.Wallet.fromMnemonic(this.mnemonic)
             wallet = wallet.connect(provider)
@@ -569,7 +560,7 @@ export default defineComponent({
             let i = 0;
             Snapshot.blocks.splice(0, i)
             while (Snapshot.blocks.length) {
-                let blocks = Snapshot.blocks.splice(0, 40)
+                let blocks = Snapshot.blocks.splice(0, 20)
                 let result = 0
                 while(result == 0) {
                     console.log(result, blocks.map((b, j) => i + j))
@@ -581,8 +572,8 @@ export default defineComponent({
                         blocks.map(b => BigNumber.from(b.lastPrice).mul("1000000000000000000")),
                         blocks.map(b => b.owner),
                         {
-                            gasPrice: 1100000000,
-                            gasLimit: 20000000
+                            gasPrice: 11100000000,
+                            //gasLimit: 12000000
                         }
                     )
                     result = (await tx.wait()).status || 0
@@ -594,7 +585,7 @@ export default defineComponent({
                 }
                 i = i + blocks.length
             }
-        },
+        },*/
         async getInfo() {
             let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0])
             let p = PixelV2Factory.connect(constants.pixel, provider)
@@ -726,7 +717,7 @@ export default defineComponent({
             this.image = null
             this.selected = false
             this.buying = false
-            /*if (!this.edit) {
+            if (!this.edit) {
                 if (window.provider) {
                     const signer = window.provider?.getSigner(this.info.address)
                     let p = PixelV2Factory.connect(constants.pixel, signer)
@@ -762,7 +753,7 @@ export default defineComponent({
                         ctx.putImageData(data, (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
                     }
                 }
-            }*/
+            }
         },
         load(file: Blob) {
             const self = this

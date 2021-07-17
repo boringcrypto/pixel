@@ -12,6 +12,6 @@ let constants = {
         rpcUrls: ['https://rpc-mainnet.maticvigil.com/'],
         blockExplorerUrls: ['https://polygonscan.com/'],
     },
-    pixel: "0x94162cB84baDa965e4E3F572a4429Ec658dc5b70"
+    pixel: "0x61E9c2F3501889f6167921087Bd6EA306002904a"
 }
 export { constants }

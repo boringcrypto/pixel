@@ -350,7 +350,7 @@ contract PixelV2 is ERC20WithSupply, MLM, BoringOwnable, ReentrancyGuard {
     BlockLink[] public link;
     // data is organized in blocks of 10x10. There are 100x100 blocks. Base is 0 and counting goes left to right, then top to bottom.
     Block[10000] public blk;
-    uint256 public constant START_TIMESTAMP = 1626490000;
+    uint256 public constant START_TIMESTAMP = 1626494000;
     uint256 public constant LOCK_TIMESTAMP = 1627578000;
     uint256[] public updates;
 
