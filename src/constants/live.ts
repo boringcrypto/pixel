@@ -9,9 +9,10 @@ let constants = {
                 symbol: 'MATIC',
                 decimals: 18
             },
-        rpcUrls: ['https://rpc-mainnet.maticvigil.com/'],
+        rpcUrls: ['https://matic-mainnet.chainstacklabs.com/', 'https://rpc-mainnet.maticvigil.com/'],
         blockExplorerUrls: ['https://polygonscan.com/'],
     },
-    pixel: "0x61E9c2F3501889f6167921087Bd6EA306002904a"
+    pixel: "0x61E9c2F3501889f6167921087Bd6EA306002904a",
+    wsUrl: "wss://ws-matic-mainnet.chainstacklabs.com"
 }
 export { constants }

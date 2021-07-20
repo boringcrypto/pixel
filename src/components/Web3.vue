@@ -55,6 +55,7 @@ export default defineComponent({
     },
     setup: (props: {info: ProviderInfo}) => {
         if (window.ethereum) {
+            let interval: number = 0
             window.provider = new ethers.providers.Web3Provider(window.ethereum)
             if (window.ethereum.isMetaMask) {
                 props.info.name = "MetaMask"
@@ -78,15 +79,12 @@ export default defineComponent({
                 props.info.chainId = Number(BigNumber.from(chainId))
                 props.info.connected = window.ethereum.isConnected()
 
-                window.provider?.off("block")
+                if (interval) {
+                    window.clearInterval(interval)
+                    interval = 0
+                }
                 window.provider = new ethers.providers.Web3Provider(window.ethereum)
                 window.ethereum.request({method: "eth_accounts"}).then(handleAccountsChanged)
-                window.provider?.getBlockNumber().then((block: number) => {
-                    props.info.block = block
-                    window.provider?.on("block", (blockNumber: number) => {
-                        props.info.block = blockNumber
-                    })
-                })
             }
             window.ethereum.autoRefreshOnNetworkChange = false
             window.ethereum.on("accountsChanged", handleAccountsChanged)
