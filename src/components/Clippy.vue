@@ -5,16 +5,7 @@
 import {defineComponent} from "vue"
 // @ts-ignore
 import clippy from 'clippyjs'
-
-declare global {
-    interface Array<T> {
-        random(): T;
-    }
-}
-
-let randomItem = function(array: any[]) {
-    return array[Math.floor(Math.random() * array.length)]
-}
+import { randomItem } from "../classes/Utils"
 
 interface ClippyAgent {
     show(): void

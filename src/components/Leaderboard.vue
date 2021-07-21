@@ -37,9 +37,6 @@ export default defineComponent({
             let board: any = {}
             for (let i in this.blocks) {
                 let block = this.blocks[i]
-                if (!block.owner) {
-                    console.log(i, block)
-                }
                 if (!board[block.owner]) {
                     board[block.owner] = {
                         pixels: 0,

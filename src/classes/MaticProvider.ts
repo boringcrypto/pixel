@@ -7,12 +7,13 @@ class MaticProvider {
         this.provider = new ethers.providers.JsonRpcProvider(rpc)
 
         this.provider.getBlockNumber().then((block: number) => {
+            poll(block)      
             window.setInterval(() => {
                 this.provider?.getBlockNumber().then((block: number) => {
                     poll(block)
                 })
             }, 10000)
-        })        
+        })  
     }
 }
 

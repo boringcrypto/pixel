@@ -1,4 +1,6 @@
-let constants = {
+import { Constants } from "./constants"
+
+let constants: Constants = {
     chainId: 80001,
     network: {
         chainId: "0x13881",

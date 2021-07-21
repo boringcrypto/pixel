@@ -1,6 +1,7 @@
+import { Constants } from "./constants"
 import * as PixelDeployment from "../../deployments/localhost/PixelV2.json"
 
-let constants = {
+let constants: Constants = {
     chainId: 31337,
     network: {
         chainId: "0x7A69",

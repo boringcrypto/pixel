@@ -1,12 +1,14 @@
 <template>
     <span v-if="diff >= 0">
+        <slot name="before">
+        </slot>
         <span v-if="days">{{ days }} days </span>
         <span v-if="days || hours">{{ hours }} hours </span>
         <span v-if="days || hours || minutes">{{ minutes }} min </span>
         {{ seconds }} sec
     </span>
     <span v-else>
-        reached
+        <slot></slot>
     </span>
 </template>
 
@@ -27,6 +29,9 @@ export default defineComponent({
         goal: {
             type: Number,
             required: true
+        },
+        pre: {
+            type: String
         }
     },
     computed: {
