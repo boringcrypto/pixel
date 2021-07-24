@@ -14,7 +14,8 @@
 <script lang="ts">
 import { ethers } from "ethers"
 import {defineComponent, Ref, ref} from "vue"
-import Web3, {EmptyProviderInfo, ProviderInfo} from "./components/Web3.vue"
+import { ProviderInfo } from "./classes/ProviderInfo"
+import Web3, { EmptyProviderInfo } from "./components/Web3.vue"
 import Home from "./pages/Home.vue"
 
 export default defineComponent({

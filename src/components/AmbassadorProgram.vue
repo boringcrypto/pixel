@@ -41,8 +41,8 @@
 <script lang="ts">
 
 import { defineComponent, PropType } from "vue"
+import { ProviderInfo } from "../classes/ProviderInfo"
 import { PollInfo } from "../types"
-import { ProviderInfo } from "./Web3.vue"
 
 export default defineComponent({
     name: "AmbassadorProgram",
@@ -52,7 +52,7 @@ export default defineComponent({
             required: true,
         },        
         pollInfo: {
-            type: Object as PropType<PollInfo>,
+            type: Object as PropType<PollInfo | null>,
         },
     }
 })

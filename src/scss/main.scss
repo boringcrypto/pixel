@@ -1,3 +1,27 @@
+.window {
+  color: black;
+}
+
+.window-body, button {
+  font-family: "Comic Sans MS";
+}
+
+.upload-button {
+  font-size: 14pt;
+  height: 38px;
+  margin-bottom: 8px;
+  margin-top: auto;
+}
+
+#drop_zone {
+  border: 3px dashed rgb(13, 13, 13);
+  width:  80%;
+  height: 100px;
+  cursor: pointer;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 table.blueTable {
     border: 1px solid #1C6EA4;
     background-color: #EEEEEE;

@@ -41,6 +41,16 @@ let Blocks = {
     }
 }
 
+function PixelsToImageData(ctx: CanvasRenderingContext2D, pixels: string): ImageData {
+    let data: ImageData = ctx.createImageData(10, 10)
+    for(let i = 0; i < 100; i++) {
+        let color = parseInt(pixels.substr(2 + i * 6, 6), 16)
+        data.data.set([Math.floor(color / 65536), Math.floor((color % 65536) / 256), color % 256, 255], i * 4)
+    }
+    return data
+}
+
 export {
-    Blocks
+    Blocks,
+    PixelsToImageData
 }

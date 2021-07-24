@@ -16,16 +16,7 @@ declare global {
 
 import {defineComponent, PropType} from "vue"
 import {BigNumber, ethers} from "ethers"
-
-export type ProviderInfo = {
-    name: string
-    connected: boolean
-    chainId: number
-    address: string
-    block: number
-    connect: () => void
-    provider: ethers.providers.Provider | null
-}
+import { ProviderInfo } from "../classes/ProviderInfo"
 
 interface ConnectInfo {
     chainId: string

@@ -1,12 +1,14 @@
 <template>
-    <div @drop="dropHandler" @dragover="dragOverHandler" @click="onClick">
-        <slot></slot>
+    <div>
+        <div @drop="dropHandler" @dragover="dragOverHandler" @click="onClick">
+            <slot></slot>
+        </div>
+        <input ref="fileInput" type="file" @input="selected" style="display: none" />
     </div>
-    <input ref="fileInput" type="file" @input="selected" style="display: none" />
 </template>
 
 <script lang="ts">
-import {defineComponent, Ref, ref} from "vue"
+import {defineComponent} from "vue"
 
 export default defineComponent({
     name: "DropTarget",
@@ -46,7 +48,7 @@ export default defineComponent({
             var reader = new FileReader()
             reader.onload = function (event) {
                 let src = event.target?.result as string
-                self.$emit("loaded", src)
+                self.$emit("fileLoaded", src)
             }
             reader.readAsDataURL(file)
         },

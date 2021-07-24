@@ -15,9 +15,9 @@
 import { BigNumber, ethers } from "ethers"
 import { defineComponent, PropType } from "vue"
 import { PixelV2 } from "../../types/ethers-contracts"
-import { Blocks } from "../classes/Blocks"
+import { ProviderInfo } from "../classes/ProviderInfo"
 import { sleep } from "../classes/Utils"
-import { ProviderInfo } from "./Web3.vue"
+import { Block } from "../types"
 
 async function blobToHex(data: Blob) {
     return "0x" + [...new Uint8Array(await data.arrayBuffer())].map(x => x.toString(16).padStart(2, '0')).join('');    
@@ -41,11 +41,19 @@ export default defineComponent({
             required: true
         },
         pixel: {
-            type: Object as PropType<PixelV2>,
+            type: Object as PropType<PixelV2 | null>,
             required: true
         },
         blocks: {
-            type: Object as PropType<Blocks>,
+            type: Object as PropType<Block[]>,
+            required: true
+        },
+        updateIndex: {
+            type: Number,
+            required: true
+        },
+        version: {
+            type: Number,
             required: true
         }
     },
@@ -56,14 +64,14 @@ export default defineComponent({
     },
     methods: {
         async withdraw() {
-            if (window.provider) {
+            if (window.provider && this.pixel) {
                 const signer = window.provider?.getSigner(this.info.address)
                 let p = this.pixel.connect(signer)
                 await p.withdraw(ethers.constants.AddressZero)
             }
         },
         async mint() {
-            if (window.provider) {
+            if (window.provider && this.pixel) {
                 const signer = window.provider?.getSigner(this.info.address)
                 let p = this.pixel.connect(signer)
                 await p.mintCanvas()
@@ -102,7 +110,7 @@ export default defineComponent({
             console.log("Test", raw, compressed)
         },
         logBlocks() { 
-            //console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex, version: this.version + 1}))
+            console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex, version: this.version + 1}))
         },
         reload() {
             /*let ctx = this.canvas?.getContext("2d")
