@@ -9,11 +9,8 @@
                 <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
                 <button v-if="!wrongNetwork && info.address" @click="buyState = BuyState.SelectImage" class="upload-button">Upload your own pixels</button>
                 <br>
-                <a style="color: white" href="https://snapshot.org/#/pixelinc.eth/proposal/QmVxXwALTod3uvmiYLo4wXscLUyD38DKDP34s66ahP7uY8" target="_blank">Move to Ethereum? 
-                    <Countdown :goal="1626919200">
-                        <template v-slot:before>Vote in&nbsp;</template>
-                        Voting is open!
-                    </Countdown>
+                <a style="color: white" href="https://snapshot.org/#/pixelinc.eth/proposal/QmVxXwALTod3uvmiYLo4wXscLUyD38DKDP34s66ahP7uY8" target="_blank">
+                    We're moving to Ethereum!
                 </a>
             </td>
             <td style="text-align: right">
