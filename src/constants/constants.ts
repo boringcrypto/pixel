@@ -12,7 +12,9 @@ interface Constants {
         rpcUrls: string[],
         blockExplorerUrls: string[],
     },
-    pixel: string
+    pixel: string,
+    migrator: string,
+    minichef: string
 }
 
 export {

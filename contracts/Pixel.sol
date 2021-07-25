@@ -37,7 +37,6 @@ interface ISushiSwapRouter {
 }
 
 // solhint-disable avoid-low-level-calls
-// solhint-disable
 
 interface ERC721TokenReceiver {
     /// @notice Handle the receipt of an NFT
