@@ -5,25 +5,6 @@
                 <PixelLogo />
             </td>
             <td style="vertical-align: bottom">
-                <div style="margin-left: auto; width: 340px; background-color: #ccc; color: black; border: 1px solid rgb(169, 216,235); margin-bottom: 8px; padding: 8px">
-                    <a href="https://snapshot.org/#/pixelinc.eth/proposal/QmVxXwALTod3uvmiYLo4wXscLUyD38DKDP34s66ahP7uY8" target="_blank">
-                        We're moving to Ethereum!
-                    </a>
-                    <p>
-                        To move your PIXEL tokens to Ethereum mainnet, you can migrate them here. Once we launch on mainnet, the PIXEL tokens will be airdropped into your Ethereum wallet with the same address.
-                    </p>
-                    <span v-if="info.address && pollInfo && pollInfo.balance.gt(0)">
-                        <button v-if="allowance.lt(pollInfo.balance)" @click="allow">
-                            Allow
-                        </button>
-                        <button v-else @click="migrate">
-                            Migrate {{ pollInfo.balance.print(18, 0) }} PIXEL tokens
-                        </button>
-                    </span>
-                    <p v-if="migrateBalance.gt(0)">
-                        In migration: {{ migrateBalance.print(18, 0) }} PIXEL
-                    </p>
-                </div>
                 <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
                 <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
                 <button v-if="!wrongNetwork && info.address" @click="buyState = BuyState.SelectImage" class="upload-button">Upload your own pixels</button>
@@ -52,13 +33,6 @@
                         <tr v-if="info.address">
                             <td style="border: 3px ridge; padding: 4px;">You own</td>
                             <td style="border: 3px ridge; padding: 4px;">{{ pollInfo.balance.print(18, 0) }}</td>
-                        </tr>
-                        <tr v-if="lpBalance.gt(0)">
-                            <td style="border: 3px ridge; padding: 4px;">Staked LP</td>
-                            <td style="border: 3px ridge; padding: 4px;">
-                                {{ lpBalance.print(18, 0) }}&nbsp;
-                                <button @click="unstake">Unstake</button>
-                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -211,16 +185,16 @@
 import {defineComponent, PropType } from "@vue/runtime-core"
 import { ProviderInfo } from "../classes/ProviderInfo"
 import * as Cache from "../cache.json"
-import { MiniChefV2, MiniChefV2Factory, PixelMigrator, PixelMigratorFactory, PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
+import { PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
 import { BigNumber } from "@ethersproject/bignumber"
 import { PollInfo } from "../types"
 import { nextTick } from "process"
 import { ethers } from "ethers"
-import { constants } from "../constants/live"
+import { constants } from "../constants/development"
 import { sleep, playSound, randomItem, decompress, compress } from "../classes/Utils"
 import { MaticProvider } from "../classes/MaticProvider"
 import { Blocks, PixelsToImageData } from "../classes/Blocks"
-import { Order, SelectedArea } from "../classes/Order"
+import { decompressPixels, Order, SelectedArea } from "../classes/Order"
 
 import Countdown from "../components/Countdown.vue"
 import PixelLogo from "../components/PixelLogo.vue"
@@ -268,9 +242,7 @@ export default defineComponent({
     setup() {
         return {
             matic: null as MaticProvider | null,
-            pixel: null as PixelV2 | null,
-            migrator: null as PixelMigrator | null,
-            minichef: null as MiniChefV2 | null
+            pixel: null as PixelV2 | null
         }
     },
     data() {
@@ -299,10 +271,6 @@ export default defineComponent({
 
             mnemonic: "",
             clippy: null as ClippyAgent | null,
-
-            allowance: BigNumber.from("0"),
-            migrateBalance: BigNumber.from("0"),
-            lpBalance: BigNumber.from("0")
         }
     },
     async created() {
@@ -310,8 +278,6 @@ export default defineComponent({
             this.newBlock()
         })
         this.pixel = PixelV2Factory.connect(constants.pixel, this.matic.provider)
-        this.migrator = PixelMigratorFactory.connect(constants.migrator, this.matic.provider)
-        this.minichef = MiniChefV2Factory.connect(constants.minichef, this.matic.provider)
 
         let dataStr = localStorage.getItem("data")
         if (dataStr) {
@@ -326,6 +292,10 @@ export default defineComponent({
             this.blocks = Cache.blocks
             this.updateIndex = Cache.updateIndex
             this.version = Cache.version
+        }
+
+        if (this.blocks.length != 10000) {
+            Blocks.empty(this.blocks)
         }
 
         this.startTimeStamp = (await this.pixel.START_TIMESTAMP()).toNumber()
@@ -344,25 +314,6 @@ export default defineComponent({
         }
     },
     methods: {
-        allow() {
-            if (window.provider && this.pixel && this.migrator) {
-                const signer = window.provider.getSigner(this.info.address)
-                this.pixel.connect(signer).approve(this.migrator.address, ethers.constants.MaxUint256)
-            }
-        },
-        migrate() {
-            if (window.provider && this.pixel && this.migrator && this.pollInfo) {
-                const signer = window.provider.getSigner(this.info.address)
-                this.migrator.connect(signer).Migrate(this.pollInfo?.balance)
-            }
-        },
-        unstake() {
-            if (window.provider && this.minichef) {
-                const signer = window.provider.getSigner(this.info.address)
-                let minichef = this.minichef.connect(signer)
-                minichef.withdrawAndHarvest(25, this.lpBalance, this.info.address)
-            }
-        },
         mousemove(event: MouseEvent) {
             if (event.target === this.canvas) {
                 this.mouseBelowHalf = event.offsetY > 500
@@ -383,8 +334,15 @@ export default defineComponent({
             if (this.pixel && window.provider) {
                 this.order = new Order()
                 await this.order.create(area, this.blocks, this.pixel, window.provider)
+                console.log(this.order)
                 if (this.order.cost.gt("0")) {
                     this.buyState = BuyState.Buy
+                    this.image = null
+                    
+                    let ctx = this.canvas?.getContext("2d")
+                    for (let i = 0; i < this.order.blockNumbers.length; i++) {
+                        ctx!.putImageData(await decompressPixels(this.order.pixels[i]), ( this.order.blockNumbers[i] % 100) * 10, Math.floor( this.order.blockNumbers[i] / 100) * 10)
+                    }
                 } else {
                     this.buyState = BuyState.None
                 }
@@ -424,22 +382,14 @@ export default defineComponent({
                     balance: pollInfo.balance,
                     supply: pollInfo.supply,
                     downline: {
-                        tier1: pollInfo.downline_.tier1,
-                        tier2: pollInfo.downline_.tier2,
-                        tier3: pollInfo.downline_.tier3,
-                        earnings1: pollInfo.downline_.earnings1,
-                        earnings2: pollInfo.downline_.earnings2,
-                        earnings3: pollInfo.downline_.earnings3
+                        tier1: pollInfo.mlm_.tier1,
+                        tier2: pollInfo.mlm_.tier2,
+                        tier3: pollInfo.mlm_.tier3,
+                        earnings1: pollInfo.mlm_.earnings1,
+                        earnings2: pollInfo.mlm_.earnings2,
+                        earnings3: pollInfo.mlm_.earnings3
                     },
                     upline: pollInfo.upline_
-                }
-
-                if (this.migrator) {
-                    this.allowance = await this.pixel.allowance(this.info.address, this.migrator.address)
-                    this.migrateBalance = await this.migrator.deposited(this.info.address)
-                }
-                if (this.minichef) {
-                    this.lpBalance = (await this.minichef.userInfo(25, this.info.address))[0]
                 }
 
                 let currentUpdatesCount = this.pollInfo.updates.toNumber()
@@ -556,9 +506,11 @@ export default defineComponent({
                 ctx.imageSmoothingEnabled= false
                 for (let b = 0; b < 10000; b++) {
                     let block = this.blocks[b]
-                    let pixels = block.pixels
-                    if (pixels) {
-                        ctx.putImageData(PixelsToImageData(ctx, pixels), (b % 100) * 10, Math.floor(b / 100) * 10)
+                    if (block) {
+                        let pixels = block.pixels
+                        if (pixels) {
+                            ctx.putImageData(PixelsToImageData(ctx, pixels), (b % 100) * 10, Math.floor(b / 100) * 10)
+                        }
                     }
                 }
             }

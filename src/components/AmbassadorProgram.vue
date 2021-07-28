@@ -15,19 +15,19 @@
                 <td>Tier 1</td>
                 <td style="text-align: right">20%</td>
                 <td style="text-align: right">{{ pollInfo.downline.tier1 }}</td>
-                <td style="text-align: right">{{ pollInfo.downline.earnings1.print(18, 2) }}</td>
+                <td style="text-align: right">{{ pollInfo.downline.earnings1 }}</td>
             </tr>
             <tr>
                 <td>Tier 2</td>
                 <td style="text-align: right">10%</td>
                 <td style="text-align: right">{{ pollInfo.downline.tier2 }}</td>
-                <td style="text-align: right">{{ pollInfo.downline.earnings2.print(18, 2) }}</td>
+                <td style="text-align: right">{{ pollInfo.downline.earnings2 }}</td>
             </tr>
             <tr>
                 <td>Tier 3</td>
                 <td style="text-align: right">5%</td>
                 <td style="text-align: right">{{ pollInfo.downline.tier3 }}</td>
-                <td style="text-align: right">{{ pollInfo.downline.earnings3.print(18, 2) }}</td>
+                <td style="text-align: right">{{ pollInfo.downline.earnings3 }}</td>
             </tr>
             </tbody>
         </table>

@@ -14,9 +14,9 @@ type PollInfo = {
     supply: BigNumber;
     upline: string;
     downline: {
-      earnings1: BigNumber;
-      earnings2: BigNumber;
-      earnings3: BigNumber;
+      earnings1: number;
+      earnings2: number;
+      earnings3: number;
       tier1: number;
       tier2: number;
       tier3: number;
