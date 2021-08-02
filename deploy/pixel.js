@@ -1,12 +1,15 @@
-const { BigNumber } = require("ethers")
+const { BigNumber } = require("ethers");
 
 console.log("Deploying")
 
-module.exports = async ({ getNamedAccounts, deployments }) => {
-    const { deploy } = deployments
-    const { deployer } = await getNamedAccounts()
+module.exports = async (hre) => {
+    const { deploy } = hre.deployments
+    const accounts = await hre.getUnnamedAccounts()
+
+    console.log("Deployer:", accounts[0])
+    
     await deploy("PixelV2", {
-        from: deployer,
+        from: accounts[0],
         args: [],
         log: true,
         value: BigNumber.from("7000000000000000000000"),

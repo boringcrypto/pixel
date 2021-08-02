@@ -58,6 +58,10 @@ function blobToImageData(blob: Blob): Promise<ImageData> {
     })
 }
 
+export function imgDataToHex(data: ImageData): string {
+    return "0x" + [...data.data.filter((e, i) => i % 4 < 3)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
 // 00 = Error
 // 01 = Stripped PNG
 // 02 = Full PNG
@@ -65,7 +69,7 @@ function blobToImageData(blob: Blob): Promise<ImageData> {
 // 04 = Full JPG
 // 05 = Raw
 // 06 = Single color
-async function compressPixels(data: ImageData): Promise<string> {
+export async function compressPixels(data: ImageData): Promise<string> {
     let canvas = document.createElement("CANVAS") as HTMLCanvasElement
     canvas.width = 10
     canvas.height = 10
@@ -107,6 +111,9 @@ async function compressPixels(data: ImageData): Promise<string> {
 }
 
 export async function decompressPixels(hex: string): Promise<ImageData> {
+    if (hex.startsWith("0x")) {
+        hex = hex.substr(2)
+    }
     let method = hex.substr(0, 2)
     hex = hex.substr(2)
     console.log(method, hex)
@@ -199,8 +206,8 @@ export class Order {
             let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
             let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
             let cost = await pixel["getCost(uint256[])"](blockNumbers)
-            let gas = await pixel.estimateGas["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, referrer || ethers.constants.AddressZero, { value: cost })
-            this.gas = this.gas.add(gas)
+            //let gas = await pixel.estimateGas["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, referrer || ethers.constants.AddressZero, { value: cost })
+            //this.gas = this.gas.add(gas)
         }
     }
 

@@ -24,6 +24,18 @@ import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
 contract AddressList {
     address[] public addresses;
     function addressesCount() public view returns (uint256) { return addresses.length; }
+
+    constructor() public {
+        addresses.push(address(0));
+    }
+
+    function addAddresses(
+        address[] calldata addresses_
+    ) public {
+        for (uint256 i = 0; i < addresses_.length; i++) { addresses.push(addresses_[i]); }
+    }
+
+    function getAddresses() public view returns (address[] memory) { return addresses; }
 }
 
 // Simple Multi Level Marketing contract with 3 tiers
@@ -43,10 +55,6 @@ contract MLM is AddressList {
 
     event MLMAddRep(address rep, address upline);
     event MLMEarn(address rep, uint32 amount, uint8 lvl);
-
-    constructor() public {
-        addresses.push(address(0));
-    }
 
     function _set(address rep, uint32 upline_, uint32 earnings1, uint32 earnings2, uint32 earnings3, uint16 tier1, uint16 tier2, uint16 tier3) internal {
         mlm[rep] = RepInfo({
@@ -132,8 +140,8 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
     string public constant name = "Pixel";
     uint8 public constant decimals = 18;
     uint256 private constant START_BLOCK_PRICE = 5e15; // Price starts at 0.00005 ETH/pixel = 0.005 ETH/block
-    uint256 public constant START_TIMESTAMP = 1626494000;
-    uint256 public constant LOCK_TIMESTAMP = 1627578000;
+    uint256 public START_TIMESTAMP;
+    uint256 public LOCK_TIMESTAMP;
     
     // Block info compressed into a single storage slot
     struct Block {
@@ -153,6 +161,15 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         uint32 number;
     }
 
+    struct ExportRawBlock {
+        uint32 owner; // current owner nr of the block
+        uint32 url; // Data nr for url
+        uint32 description; // Data nr for description
+        uint32 pixels; // Data nr for pixels
+        uint128 lastPrice; // last sale price - 0 = never sold
+        uint32 number;
+    }
+
     // lookup tables
     bytes[] public data;
     string[] public text;
@@ -164,10 +181,9 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
     Block[10000] public blk;
     uint256[] public updates;
 
-    bool public initializing = true;
-
     constructor() public payable {
         // Set data[0] to blank
+        text.push("");
         data.push(bytes(""));
         updates.push(10000); // Update of 10000 means: update all blocks from 0 to 9999
 
@@ -193,6 +209,19 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         }
     }
 
+    function getRawBlocks(uint256[] calldata blockNumbers) public view returns (ExportRawBlock[] memory blocks) {
+        blocks = new ExportRawBlock[](blockNumbers.length);
+        for (uint256 i = 0; i < blockNumbers.length; i++) {
+            Block memory _blk = blk[blockNumbers[i]];
+            blocks[i].number = blockNumbers[i].to32();
+            blocks[i].owner = _blk.owner;
+            blocks[i].url = _blk.url;
+            blocks[i].description = _blk.description;
+            blocks[i].pixels = _blk.pixels;
+            blocks[i].lastPrice = _blk.lastPrice;
+        }
+    }
+
     function updatesCount() public view returns (uint256) {
         return updates.length;
     }
@@ -208,16 +237,29 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         }
     }
 
-    function addLookups(
-        address[] calldata owners,
-        string[] calldata url,
-        string[] calldata description,
-        bytes[] calldata pixels
+    function addText(
+        string[] calldata text_
     ) public {
-        for (uint256 i = 0; i < owners.length; i++) { addresses.push(owners[i]); }
-        for (uint256 i = 0; i < url.length; i++) { text.push(url[i]); }
-        for (uint256 i = 0; i < description.length; i++) { text.push(description[i]); }
-        for (uint256 i = 0; i < pixels.length; i++) { data.push(pixels[i]); }
+        for (uint256 i = 0; i < text_.length; i++) { text.push(text_[i]); }
+    }
+
+    function addData(
+        bytes[] calldata data_
+    ) public {
+        for (uint256 i = 0; i < data_.length; i++) { data.push(data_[i]); }
+    }
+
+    function getText() public view returns (string[] memory) { return text; }
+    function getData(
+        uint256 start,
+        uint256 end
+    ) public view returns (bytes[] memory) {
+        bytes[] memory result = new bytes[](end - start);
+        for (uint256 i = start; i < (end == 0 ? data.length : end); i++)
+        {
+            result[i - start] = data[i];
+        }
+        return result; 
     }
 
     function initBlocks(
@@ -228,7 +270,7 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         uint32[] calldata descriptionNr,
         uint32[] calldata pixelsNr
     ) public onlyOwner {
-        require(initializing, "Initialization finished");
+        require(START_TIMESTAMP == 0, "Initialization finished");
 
         for (uint256 i = 0; i < blockNumbers.length; i++) {
             uint256 blockNumber = blockNumbers[i];
@@ -244,7 +286,8 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
     }
 
     function finishInit() public onlyOwner {
-        initializing = false;
+        START_TIMESTAMP = block.timestamp + 2 hour;
+        END_TIMESTAMP = block.timestamp + 14 days + 2 hour;
     }
 
     function _setBlock(
@@ -268,10 +311,11 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         block_.description = descriptionNr;
         block_.lastPrice = blockCost.to128();
         block_.pixels = pixelsNr;
+        blk[blockNumber] = block_;
 
         updates.push(blockNumber);
 
-        emit PixelBlockTransfer(previousOwner, msg.sender, blockCost);
+        emit PixelBlockTransfer(previousOwner, addresses[ownerNr], blockCost);
     }
 
     function setBlocks(
@@ -310,7 +354,7 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
 
         uint256 cost;
         for (uint256 i = 0; i < blockNumbers.length; i++) {
-            cost = cost.add(_setBlock(blockNumbers[i], ownerNr, urlNr, descriptionNr, (pixelsNr[i] >=0 ? uint256(pixelsNr[i]) : uint256(-pixelsNr[i]) + startPixelNr).to32()));
+            cost = cost.add(_setBlock(blockNumbers[i], ownerNr, urlNr, descriptionNr, (pixelsNr[i] >=0 ? uint256(pixelsNr[i]) : uint256(1-pixelsNr[i]) + startPixelNr).to32()));
         }
 
         require(msg.value == cost, "Pixel: not enough funds");
