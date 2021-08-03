@@ -7,7 +7,7 @@ import {defineComponent} from "vue"
 import clippy from 'clippyjs'
 import { randomItem } from "../classes/Utils"
 
-interface ClippyAgent {
+export interface ClippyAgent {
     show(): void
     speak(text: string): void
 }
@@ -38,8 +38,5 @@ let Clippy = defineComponent({
     }
 })
 
-export {
-    Clippy as default,
-    ClippyAgent
-}
+export default Clippy;
 </script>

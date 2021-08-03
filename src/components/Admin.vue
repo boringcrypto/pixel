@@ -2,7 +2,7 @@
     <hr>
     Admin<br>
     Edit mode: {{ edit ? 'ON' : 'OFF'}}<br>
-    <button @click="withdraw">Withdraw MATIC</button>
+    <button @click="withdraw">Withdraw ETH</button>
     <button @click="edit=!edit">Edit mode</button>
     <button @click="logBlocks">Log cache</button>
     <button @click="reload">Reload</button>

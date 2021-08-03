@@ -61,11 +61,11 @@ let Blocks = {
         this.clear(blocks)
         for (let i = 0; i < 10000; i++) { 
             blocks.push({
-                owner: "",
+                owner: 0,
                 lastPrice: 0,
-                url: "",
-                description: "",
-                pixels: ""
+                url: 0,
+                description: 0,
+                pixels: 0
             })
         }
         return blocks

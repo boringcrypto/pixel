@@ -1,5 +1,10 @@
 {
     "blocks": [],
+    "addresses": [],
+    "texts": [],
+    "datas": [],
     "updateIndex": 0,
+    "startTimeStamp": 0,
+    "lockTimeStamp": 0,
     "version": 30
 }

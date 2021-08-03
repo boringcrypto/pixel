@@ -116,7 +116,6 @@ export async function decompressPixels(hex: string): Promise<ImageData> {
     }
     let method = hex.substr(0, 2)
     hex = hex.substr(2)
-    console.log(method, hex)
     if (method == "01" || method == "02" || method == "03" || method == "04") {
         if (method == "01") {
             hex = "89504e470d0a1a0a0000000d494844520000000a0000000a08060000008d32cfbd0000" + hex + "0000000049454e44ae426082"

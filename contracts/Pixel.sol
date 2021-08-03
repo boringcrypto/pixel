@@ -36,6 +36,17 @@ contract AddressList {
     }
 
     function getAddresses() public view returns (address[] memory) { return addresses; }
+    function getAddressesRange(
+        uint256 start,
+        uint256 end
+    ) public view returns (address[] memory) {
+        address[] memory result = new address[](end - start);
+        for (uint256 i = start; i < (end == 0 ? addresses.length : end); i++)
+        {
+            result[i - start] = addresses[i];
+        }
+        return result; 
+    }
 }
 
 // Simple Multi Level Marketing contract with 3 tiers
@@ -250,7 +261,19 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
     }
 
     function getText() public view returns (string[] memory) { return text; }
-    function getData(
+    function getTextRange(
+        uint256 start,
+        uint256 end
+    ) public view returns (string[] memory) {
+        string[] memory result = new string[](end - start);
+        for (uint256 i = start; i < (end == 0 ? text.length : end); i++)
+        {
+            result[i - start] = text[i];
+        }
+        return result; 
+    }
+
+    function getDataRange(
         uint256 start,
         uint256 end
     ) public view returns (bytes[] memory) {
@@ -286,8 +309,8 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
     }
 
     function finishInit() public onlyOwner {
-        START_TIMESTAMP = block.timestamp + 2 hour;
-        END_TIMESTAMP = block.timestamp + 14 days + 2 hour;
+        START_TIMESTAMP = block.timestamp + 2 hours;
+        LOCK_TIMESTAMP = block.timestamp + 14 days + 2 hours;
     }
 
     function _setBlock(
@@ -384,8 +407,7 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         if (token != IERC20(0)) {
             // Withdraw any accidental token deposits
             token.safeTransfer(owner, token.balanceOf(address(this)));
-        } else if (block.timestamp < LOCK_TIMESTAMP) {
-            // After canvas is created, funds go to PIXEL hodlers and can't be withdrawn by the owner
+        } else {
             bool success;
             (success, ) = owner.call{value: address(this).balance}("");
         }
@@ -402,6 +424,7 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         upline_ = addresses[mlm[user].upline];
     }
 
-    // Receive funds from NFT sales for all PIXEL hodlers
-    receive() external payable {}
+    function burn(uint256 amount) public {
+        _burn(msg.sender, amount);
+    }
 }

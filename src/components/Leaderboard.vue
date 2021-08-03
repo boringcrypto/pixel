@@ -21,32 +21,34 @@
 
 <script lang="ts">
 
+import { BigNumber } from "@ethersproject/bignumber"
 import {defineComponent, PropType} from "vue"
-import { Block } from "../types"
+import { LocalData } from "../classes/LocalData"
 
 export default defineComponent({
     name: "Leaderboard",
     props: {
-        blocks: {
-            type: Object as PropType<Block[]>,
+        data: {
+            type: Object as PropType<LocalData>,
             required: true,
         },
     },
     computed: {
         leaderboard(): any {
             let board: any = {}
-            for (let i in this.blocks) {
-                let block = this.blocks[i]
-                if (!board[block.owner]) {
-                    board[block.owner] = {
+            for (let i in this.data.blocks) {
+                let block = this.data.blocks[i]
+                let owner = this.data.addresses[block.owner]
+                if (!board[owner]) {
+                    board[owner] = {
                         pixels: 0,
                         price: 0
                     }
                 }
-                board[block.owner].pixels = board[block.owner].pixels + 100
-                board[block.owner].price = board[block.owner].price + block.lastPrice
+                board[owner].pixels = board[owner].pixels + 100
+                board[owner].price = board[owner].price + block.lastPrice
             }
-            return Object.keys(board).map(a => ({ address: a, pixels: board[a].pixels, price: board[a].price })).sort(function(a, b) { return b.pixels - a.pixels; })
+            return Object.keys(board).map(a => ({ address: a, pixels: board[a].pixels, price: Math.round(board[a].price * 2000) / 2000 })).sort(function(a, b) { return b.pixels - a.pixels + b.price - a.price; })
         }
     }
 })
