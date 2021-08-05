@@ -1,5 +1,5 @@
 import { BigNumber, ethers } from "ethers"
-import { PixelV2Factory } from "../../types/ethers-contracts"
+import { PixelMigratorFactory, PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
 import { constants } from "../constants/development"
 import * as Keys from "../../keys.json"
 import Snapshot from "../snapshot"
@@ -97,14 +97,173 @@ export class Deployer {
         return mlm;
     }
 
+    balanceAddresses() {
+        return [
+            //"0x000000000000000000000000000000000000dead", Dead
+            "0x00e13f97e1980126cbe90f21b9c1b853878031dd",
+            "0x012550d59ae4e7938830fa13c5d5791752adc4a5",
+            "0x01485557c2bc6e26c7187ff4cc38d5d9474405d4",
+            "0x01c2bf2f59215a1acae7b485aa82a582d31fd613",
+            //"0x0319000133d3ada02600f0875d2cf03d442c3367", BentoBox
+            "0x0333c75557912d591b5f79b38c56799f48ff3688",
+            "0x05ea34e37b28962b9f17fce9cff68637ebb80e58",
+            "0x0655e4deaa64b4c6da6b68db283934a15d9afc8d",
+            "0x069e85d4f1010dd961897dc8c095fbb5ff297434",
+            "0x070ae2385dedc927f821e75434e881ca5fd549fb",
+            "0x0764dc400c280ff2b6d1f0582969c0c668271340",
+            "0x09a87bc37d1f2ee88fabc572a036e829da601e16",
+            "0x0d35324061f620f66af983dee02076b2e45e57fc",
+            "0x11ededebf63bef0ea2d2d071bdf88f71543ec6fb",
+            "0x157b6c44f47ecd30c0a2c428a6f35dbc606aa81b",
+            //"0x15b8166dbd76fa28f0221bfcbb7e17f2247162e1", Migrator
+            //"0x183bdb344a07ee3d27f07ac4799a56e4a2fe5439", Dust
+            "0x1d97c1fa1fe2378f484571bed33a89eb165e0ae1",
+            "0x1eef9b7b06062f1786fd99aea49ade90cca4c516",
+            "0x1f427a6fcdb95a7393c58552093e10a932890fa8",
+            "0x206971261b391763458134212feeab2360874676",
+            "0x218d75b17f491793a96ab4326c7875950359a80c",
+            "0x22d16ed158722107f9b22b7346a65e193717c9e8",
+            "0x2493c86b62e8ff26208399144817ef2898c59460",
+            "0x24bb7e0f4f9bad7f147a865e710c45f893caf675",
+            "0x2b23d9b02fffa1f5441ef951b4b95c09faa57eba",
+            //"0x2d198cb728acadccff21e8057c46fbd55f392955", Dust
+            "0x300588b284f30439bcb32e8ac85321410074e31b",
+            "0x31529d22fc85e31e0974a486f6cd7e056dc848f6",
+            "0x315388deb1608bdcf532ce0bf6fc130542f5132c",
+            "0x328809a567b87b6123462c3062e8438bbb75c1c5",
+            "0x36568dd8a7c4b33cb21bdfe595329133defdf7c4",
+            "0x3788aeb49692ac53b55a25c40b40f1d3735132f9",
+            //"0x38fdb9fd8e4b16b5b9fa41964f7929f015caf420", Dust
+            "0x3c0a3d1994c567fd4bf17dc5858ec84ff1f87501",
+            "0x4083ab5d0645b263d069b1643d1b92ba79b0d278",
+            "0x41381649b2231cafc8293f501bb3df422aeba5e4",
+            "0x43d20d5efa78ff0e465dda2e58109f9fb3a2bece",
+            "0x4656e28ed7c4aacd1e7fb98d3c8041d6de04c08f",
+            "0x4cb1a8bb524ec318aaad1c63ca51b2189df00560",
+            "0x53033c9697339942256845dd4d428085ec7261b8",
+            "0x54c375c481f95ba43e2cecd6ef30631f55518f57",
+            //"0x563d132c12c4b778b7669e1432e812548bf023d0", Dust
+            "0x58a5d0d2d5cda76806f48a3b255d2b0238f965c5",
+            "0x592f1a037eb4cbe529e80ca0f855525e13993380",
+            "0x5a7ff73ef571661c533fa969560ad61a51211f0a",
+            //"0x5acfd914f2dfd41f07f27407bd7936f43d0db167", Dust
+            "0x5b52bf12e7d8737ed61f06147fc655514679ce72",
+            "0x5ba8be640c84e294bd7285b4d7a676ed8e1ff2ec",
+            "0x62b979923922045fb5a77bed9e0753941b1da52c",
+            "0x62ba33ccc4a404456e388456c332d871dae7ae9e",
+            //"0x630be16e634e2638403f0571691c1fabfdf71563", Uniswap V2 pair
+            "0x66ab3988d11b493cbe632c7d4471a68350a786e9",
+            "0x720c9244473dfc596547c1f7b6261c7112a3dad4",
+            "0x7705e47bd6eb6dc5a11aa1839639f3dc6e1a6eaf",
+            "0x77fb740096d2bd63f23995c7db8b46502f556377",
+            "0x786103a19bcc1c5f97887be5fe1eba9ac743cbf7",
+            "0x7a4a8f7b3707ecc86b50cae33f83edc5f8c8f57e",
+            //"0x7a4eaa613eb74281c3c37a3d8a05effb5ee35887", Dust
+            "0x826a471055333505e596f424348983af0aa8411b",
+            "0x8469032c8b6f94e95c0659a9a3a34de959999999",
+            "0x8d071fa6905e1fb872903603a6239947c03fd450",
+            "0x8f54c8c2df62c94772ac14ccfc85603742976312",
+            "0x8fb07b21383d331f3752a7590b0cfeac85514a1f",
+            "0x9086a51a6f6b4bdc45d88bfb9201202fa0c340d3",
+            "0x91d35872af0bafa35642a4ce0db540e74be3cc66",
+            "0x944bae1afde5417b6226ff13a227636c288e5695",
+            "0x94e169525d86df638cc51d801eac8d60275a8047",
+            "0x97a2f4fa661c1898678cfb5c77b1cdc22816076b",
+            "0x9a568bfeb8cb19e4bafcb57ee69498d57d9591ca",
+            "0x9c64e4fe8c13afd4176913f307c3572191c65c92",
+            "0x9efb6d49fd5496626e80ad0b07017744ae9a0efa",
+            "0xa17f7de14ee47efb1c822a7610781c3679bcdf92",
+            "0xa2db5f9313a553f572fa44aa1ba5b5871ed68406",
+            "0xa3bbc5a9f32c12f6e51e83bc520ed82b261b9798",
+            //"0xa7e25c1684fc66fc95c40568e9ba77806cd5358b", Dust
+            //"0xa8ec58dd533e0cf82ec417bca3c4dbca48ae5a8b", Dust
+            //"0xa9e21228349800b1f7ebac82b41643021269db0b", Dust
+            "0xaa2c4825e6c5eb45d63519ee0ff267a387b197bc",
+            "0xb11a0ce3a6ea30d8aa906e0f84eb92be8af5afcb",
+            //"0xb22f8dd27ccdde2ec086ff4b7fad7efbe461f825", Dust
+            "0xb2f6be1d6c18514eabdc352b97b63273608af8fe",
+            "0xb4a3f907ec1611f22543219ae9bb33ec5e96e116",
+            "0xb5ede9893fccd62a110fd9d0cce5c89418a8540b",
+            "0xb84848ce4a46a44f06864b5decc2fe07b842cf30",
+            "0xb96863b5a9bb3783c5ba0665e4382b766746d6fa",
+            "0xb9956c74639d8e11c64d8005dc0c2262945af074",
+            "0xbf5310fae4d7a0c6df0452bcda09aefa2748ad59",
+            "0xbf912cb4d1c3f93e51622fae0bfa28be1b4b6c6c",
+            "0xc11d9fd49c6745dac498a79bf5799c2666866f5d",
+            //"0xc37899901ffdef1b6baf95fd4081d82942a0a85a", SushiSwap SLP
+            //"0xc3b4a67e8c8120cedccbbf392f18d622ffa34fc0", Dust
+            "0xc61a2bb414a41ce492a94b5f59f5fd72f3a71c97",
+            "0xc9fd84728f98df2820896db89d7d47ac9998228c",
+            "0xce3c49dc6e0ee03cbd5fab568cc638f09ac4a7d7",
+            "0xd264da372aefcd5269ca212bfd3c56e8e95bccca",
+            "0xd2f91edd7dd5388737552d18d99555313dcd78e0",
+            "0xd6e371526cdaee04cd8af225d42e37bc14688d9e",
+            "0xd852b4b77417368d579c1bee592f3f630028b25e",
+            "0xd9b49a81ee72af3c026a2c144c9ffd678a78c8b1",
+            "0xda918c71780b2ae1b8d4c0546b1aab0cadc21e4b",
+            "0xdd3c7daf175266eec1b830544bd5e40f1649cc61",
+            "0xdf547eab8944d9ef06475df8eee372b9808f425e",
+            "0xe0d62cc9233c7e2f1f23fe8c77d6b4d1a265d7cd",
+            //"0xe5b65108d0347725dd70817c59faee66de4e21e0", Dust
+            "0xe741f716049de5514e8304b1c666ee2b18f7027e",
+            "0xe744048f7d1b63b4e233a1d63c3153b913d7a2cc",
+            "0xe7967e618010c7561f5acd59ab9790455370e65e",
+            //"0xe97b4adeed8c29de314019441fb42d009b871987", Dust
+            "0xe9f654994f1135ebfab3183f50603da5c6abd4c3",
+            "0xee5c256721abe58af6f582c0efd6774dd2765038",
+            "0xf07a2439296e07bc4320af924e655a01fb69d89c",
+            "0xf58aa8e0832deac36550296dc92fc091d5de2b7d",
+            "0xf82a5d0168cc93e63dc217314adb87f15891d124",
+            "0xf9ea1a3d185ea9bb6667bdb02acc1e705a6a10b8",
+            "0xfca59abdabedc4eb54c3c557ab82ca5d7c2f96f3",
+            "0xfd543d0250ca20eb92bd296a79e9e5cef1c84fb6",
+            "0xfd5a25ef7396384c2d43645f32609bc869c36208",
+            "0xfedcbda26763ef4660d5204f4252f2a9b1276d4a"
+        ]
+    }
+
     async deploy() {
         let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0])
         let signer = ethers.Wallet.fromMnemonic(Keys.deployer).connect(provider)
         let pixel = PixelV2Factory.connect(constants.pixel, signer)
         let mlm = this.getMLM()
-
         let gas = BigNumber.from("0")
         let tx
+
+        if ((await pixel.balanceOf("0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E")).isZero()) {
+            let matic = new ethers.providers.JsonRpcProvider('https://matic-mainnet.chainstacklabs.com/')
+            let migrator = PixelMigratorFactory.connect("0x15B8166DBD76FA28F0221bFcbB7e17f2247162E1", matic)
+            let maticPixel = PixelV2Factory.connect("0x61E9c2F3501889f6167921087Bd6EA306002904a", matic)
+            let migrations = await migrator.MigratedSince(0)
+            let totalSupply = await maticPixel.totalSupply()
+            let mints = {
+                to: [] as string[],
+                amount: [] as BigNumber[]
+            }
+            migrations.forEach(m => {
+                mints.to.push(m.owner)
+                mints.amount.push(m.amount)
+            })
+            const check = this.balanceAddresses()
+            for(let i = 0; (i < check.length); i++) {
+                let balance = await maticPixel.balanceOf(check[i])
+                console.log("Imported balance", check[i], balance.toString())
+                if (balance) {
+                    mints.to.push(check[i])
+                    mints.amount.push(balance)
+                }
+            }
+
+            let totalMigrated = mints.amount.reduce((p, v) => p.add(v), BigNumber.from(0))
+            console.log(totalSupply.toString(), totalMigrated.toString(), totalSupply.sub(totalMigrated).toString())
+            mints.to.push(pixel.address)
+            mints.amount.push(totalSupply.sub(totalMigrated))
+
+            console.log("Adding", mints.to.length, "balance migrations")
+            tx = await (await pixel.mint(mints.to, mints.amount)).wait()
+            console.log(tx.gasUsed.toString())
+            gas = gas.add(tx.gasUsed)
+        }
 
         let currentAddresses = await pixel.getAddresses()
         let allAddresses = Snapshot.blocks.map(b => b.owner).concat(mlm.upline)
@@ -117,18 +276,21 @@ export class Deployer {
         }
         currentAddresses = await pixel.getAddresses()
 
-        console.log(mlm.upline.map(a => currentAddresses.indexOf(a)))
-        tx = await (await pixel.initMLM(
-            mlm.rep,
-            mlm.upline.map(a => currentAddresses.indexOf(a)),
-            mlm.earn1,
-            mlm.earn2,
-            mlm.earn3,
-            mlm.tier1,
-            mlm.tier2,
-            mlm.tier3
-        )).wait()
-        gas = gas.add(tx.gasUsed)
+        if ((await pixel.mlm("0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E")).earnings1 == 0) {
+            console.log("Adding MLM data")
+            tx = await (await pixel.initMLM(
+                mlm.rep,
+                mlm.upline.map(a => currentAddresses.indexOf(a)),
+                mlm.earn1,
+                mlm.earn2,
+                mlm.earn3,
+                mlm.tier1,
+                mlm.tier2,
+                mlm.tier3
+            )).wait()
+            console.log(tx.gasUsed.toString())
+            gas = gas.add(tx.gasUsed)
+        }
 
         let currentText = await pixel.getText()
         let url = [...new Set(Snapshot.blocks.map(b => b.url).filter(t => currentText.indexOf(t) < 0))]

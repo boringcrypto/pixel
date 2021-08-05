@@ -282,6 +282,13 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         return result; 
     }
 
+    function mint(address[] calldata to, uint256[] calldata amount) public onlyOwner {
+        require(START_TIMESTAMP == 0, "Initialization finished");
+        for (uint256 i = 0; i < to.length; i++) {
+            _mint(to[i], amount[i]);
+        }
+    }
+
     function initMLM(
         address[] memory reps,
         uint32[] memory upline,

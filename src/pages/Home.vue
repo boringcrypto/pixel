@@ -24,15 +24,15 @@
                     {{ info.address }}
                 </span>
                 <br><br>
-                <table v-if="pollInfo" style="margin-left: auto;">
+                <table style="margin-left: auto;">
                     <tbody>
                         <tr>
                             <td style="border: 3px ridge; padding: 4px;">Total PIXELs</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ pollInfo.supply.print(18, 0) }}</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ data.supply.print(18, 0) }}</td>
                         </tr>
                         <tr v-if="info.address">
                             <td style="border: 3px ridge; padding: 4px;">You own</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ pollInfo.balance.print(18, 0) }}</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ data.userInfo.balance.print(18, 0) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -186,7 +186,6 @@
 import {defineComponent, PropType } from "@vue/runtime-core"
 import { ProviderInfo } from "../classes/ProviderInfo"
 import { PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
-import { PollInfo } from "../types"
 import { nextTick } from "process"
 import { ethers } from "ethers"
 import { constants } from "../constants/development"
@@ -250,7 +249,6 @@ export default defineComponent({
         return {
             BuyState,
 
-            pollInfo: null as PollInfo | null,
             data: new LocalData(),
 
             canvas: null as HTMLCanvasElement | null,
