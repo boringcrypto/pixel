@@ -71,6 +71,7 @@ export class LocalData {
     lockTimeStamp = 0
     userInfo = new UserInfo()
     supply = BigNumber.from(0)
+    loading = false
 
     async load() {
         // Load from (compressed) localStorage
@@ -177,7 +178,7 @@ export class LocalData {
         }
     }
 
-    async updateBlocks(pixel: PixelV2, count: number): Promise<number[]> {
+    async updateBlocks(pixel: PixelV2, count: number, onBlocks: (onBlocks: number[]) => void) {
         const max_batch_size = 1000
         let updates: number[] = []
         let start = this.updateIndex
@@ -196,11 +197,12 @@ export class LocalData {
                 console.log("Update ALL blocks")
                 updates = [...Array(10000).keys()]
             }
-            let allUpdates = [...updates]
 
             while (updates.length) {
                 console.log("Update blocks", updates.length, "left")
-                let blocks = await retry(() => pixel.getRawBlocks(updates.splice(0, 100)))
+                let blockNumbers = updates.splice(0, 100)
+                let blocks = await retry(() => pixel.getRawBlocks(blockNumbers))
+                console.log(blocks)
 
                 for (let i in blocks) {
                     let block = blocks[i]
@@ -211,15 +213,15 @@ export class LocalData {
 
                     this.blocks[block.number].pixels = block.pixels
                 }
+
+                onBlocks(blockNumbers)
             }
 
             this.updateIndex = count
-            return allUpdates
         }
-        return []
     }
 
-    async update(pixel: PixelV2, address: string): Promise<number[]> {
+    async update(pixel: PixelV2, address: string, onBlocks: (onBlocks: number[]) => void) {
         if (!this.startTimeStamp) {
             this.startTimeStamp = (await pixel.START_TIMESTAMP()).toNumber()
             this.lockTimeStamp = (await pixel.LOCK_TIMESTAMP()).toNumber()
@@ -231,9 +233,30 @@ export class LocalData {
         this.supply = pollInfo.supply
 
         // Update lookups
-        await this.updateAddresses(pixel, pollInfo.addresses_.toNumber())
-        await this.updateTexts(pixel, pollInfo.text_.toNumber())
-        await this.updateDatas(pixel, pollInfo.data_.toNumber())
-        return await this.updateBlocks(pixel, pollInfo.updates_.toNumber())
+        const addressCount = pollInfo.addresses_.toNumber()
+        const textCount = pollInfo.text_.toNumber()
+        const dataCount = pollInfo.data_.toNumber()
+        const updateCount = pollInfo.updates_.toNumber()
+        if (this.loading) { return }
+        if (this.addresses.length < addressCount) {
+            this.loading = true
+            await this.updateAddresses(pixel, addressCount)
+        }
+        if (this.texts.length < textCount) {
+            this.loading = true
+            await this.updateTexts(pixel, textCount)
+        }
+        if (this.datas.length < dataCount) {
+            this.loading = true
+            await this.updateDatas(pixel, dataCount)
+        }
+        if (this.updateIndex < updateCount) {
+            this.loading = true
+            await this.updateBlocks(pixel, updateCount, onBlocks)
+        }
+        if (this.loading) {
+            this.save()
+            this.loading = false
+        }
     }
 }

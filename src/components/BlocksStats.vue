@@ -22,13 +22,13 @@ export default defineComponent({
             return this.blocks ? this.blocks.filter(b => b.owner).length : 0
         },
         lvl2(): number {
-            return this.blocks ? this.blocks.filter(b => b.lastPrice >= 20).length : 0
+            return this.blocks ? this.blocks.filter(b => b.lastPrice >= 0.01).length : 0
         },
         lvl3(): number {
-            return this.blocks ? this.blocks.filter(b => b.lastPrice >= 40).length : 0
+            return this.blocks ? this.blocks.filter(b => b.lastPrice >= 0.02).length : 0
         },
         lvl4(): number {
-            return this.blocks ? this.blocks.filter(b => b.lastPrice >= 80).length : 0
+            return this.blocks ? this.blocks.filter(b => b.lastPrice >= 0.04).length : 0
         }
     }
 })

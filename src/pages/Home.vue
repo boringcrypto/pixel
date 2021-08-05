@@ -37,6 +37,7 @@
                     </tbody>
                 </table>
                 <br>
+                {{ data.startTimeStamp }} - {{ data.lockTimeStamp }}
                 <Countdown :goal="data.startTimeStamp">
                     <template v-slot:before>
                         <strong>Creation Phase</strong><br>
@@ -59,7 +60,7 @@
     <SelectionArea :image="image" :select="buyState == BuyState.DrawArea" @select="areaSelected" style="position: relative; width: 1000px; height: 1000px; background-color: rgb(40, 95, 170); border: 1px solid rgb(169, 216,235); margin-left: auto; margin-right: auto;">
         <canvas id="canvas" width="1000" height="1000" @click="click" @mousemove="mousemove" @mouseleave="mouseleave" style="cursor: pointer;" />
         <Tooltip v-if="buyState != BuyState.SelectImage" ref="tooltip" :info="info" :data="data" :mx="mx" :my="my" />
-        <Loading v-if="loading" />
+        <Loading v-if="data.loading" />
 
         <div v-if="buyState == BuyState.SelectImage" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
             <div class="title-bar">
@@ -174,7 +175,7 @@
     </table>
     <br>
     <Leaderboard :data="data" />
-    <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :pixel="pixel" :blocks="data.blocks" :updateIndex="updateIndex" :version="version" />
+    <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :pixel="pixel" :blocks="data.blocks" :updateIndex="data.updateIndex" :version="data.version" />
     <Clippy @loaded="clippyLoaded"></Clippy>
 </template>
 
@@ -248,7 +249,6 @@ export default defineComponent({
     data() {
         return {
             BuyState,
-            loading: false,
 
             pollInfo: null as PollInfo | null,
             data: new LocalData(),
@@ -312,16 +312,16 @@ export default defineComponent({
         async areaSelected(area: SelectedArea) {
             if (this.pixel && window.provider) {
                 this.order = new Order()
-                await this.order.create(area, this.data.blocks, this.pixel, window.provider)
+                await this.order.create(area, this.data, this.pixel, window.provider)
                 console.log(this.order)
                 if (this.order.cost.gt("0")) {
                     this.buyState = BuyState.Buy
                     this.image = null
                     
-                    let ctx = this.canvas?.getContext("2d")
+                    /*let ctx = this.canvas?.getContext("2d")
                     for (let i = 0; i < this.order.blockNumbers.length; i++) {
                         ctx!.putImageData(await decompressPixels(this.order.pixels[i]), ( this.order.blockNumbers[i] % 100) * 10, Math.floor( this.order.blockNumbers[i] / 100) * 10)
-                    }
+                    }*/
                 } else {
                     this.buyState = BuyState.None
                 }
@@ -330,17 +330,6 @@ export default defineComponent({
         clippyLoaded(agent: ClippyAgent) {
             this.clippy = agent
             window.setTimeout(() => {
-                let app = document.getElementById("app")
-                if (app) {
-                    app.style.display = "block";
-                }
-                let splash = document.getElementById("splash")
-                if (splash) {
-                    splash.style.display = "none";
-                }
-
-                playSound('/' + randomItem(["win95", "winxp"]) + '.mp3')
-
                 window.setTimeout(() => {
                     this.clippy!.show()
                     this.clippy!.speak("Welcome to Pixel Inc!")
@@ -355,33 +344,24 @@ export default defineComponent({
             if (ctx && this.pixel && this.data.startTimeStamp) {
                 console.log("Polling for new data")
 
-                if (!this.data.startTimeStamp) {
+                if (!this.data.lockTimeStamp) {
                     this.data.startTimeStamp = (await this.pixel.START_TIMESTAMP()).toNumber()
                     this.data.lockTimeStamp = (await this.pixel.LOCK_TIMESTAMP()).toNumber()
                 }
 
-                if (this.loading) { return; }
-                this.loading = true
-
-                let updates = await this.data.update(this.pixel, this.info.address)
-                console.log("Updates", updates)
-
-                if (updates.length) {
-                    updates.forEach(blockNumber => {
+                await this.data.update(this.pixel, this.info.address, (blocks) => {
+                    blocks.forEach(blockNumber => {
                         let block = this.data.blocks[blockNumber]
                         ctx!.putImageData(PixelsToImageData(ctx!, this.data.datas[block.pixels]), (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
                     })
-
-                    this.data.save()
-                }
-                this.loading = false
+                })
             }
         },
         async buy() {
             this.image = null
             this.buyState = BuyState.None
             if (this.pixel && window.provider) {
-                this.order.buy(this.pixel, window.provider, this.info, this.referrerClean)
+                this.order.buy(this.pixel, window.provider, this.data, this.info, this.referrerClean)
             }
         },
         agentDo(action: string) {
@@ -409,6 +389,16 @@ export default defineComponent({
                     }
                 }
             }
+            let app = document.getElementById("app")
+            if (app) {
+                app.style.display = "block";
+            }
+            let splash = document.getElementById("splash")
+            if (splash) {
+                splash.style.display = "none";
+            }
+
+            playSound('/' + randomItem(["win95", "winxp"]) + '.mp3')
         })
     }
 })

@@ -197,9 +197,6 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         text.push("");
         data.push(bytes(""));
         updates.push(10000); // Update of 10000 means: update all blocks from 0 to 9999
-
-        //_setUpline(0x30a0911731f6eC80c87C4b99f27c254639A3Abcd, 0x256D49d87cbb877D26E2Bcf2bF0A40D26bdfB5d4);
-        //_setDownline(0x30a0911731f6eC80c87C4b99f27c254639A3Abcd, 1960000000000000000000, 0, 0, 3, 0, 0);
     }
 
     modifier onlyCreationPhase() {
@@ -285,6 +282,22 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         return result; 
     }
 
+    function initMLM(
+        address[] memory reps,
+        uint32[] memory upline,
+        uint32[] memory earn1,
+        uint32[] memory earn2,
+        uint32[] memory earn3,
+        uint16[] memory tier1,
+        uint16[] memory tier2,
+        uint16[] memory tier3
+    ) public onlyOwner {
+        require(START_TIMESTAMP == 0, "Initialization finished");
+        for (uint256 i = 0; i < reps.length; i++) {
+            _set(reps[i], upline[i], earn1[i], earn2[i], earn3[i], tier1[i], tier2[i], tier3[i]);
+        }
+    }
+
     function initBlocks(
         uint256[] calldata blockNumbers,
         uint128[] calldata lastPrice,
@@ -320,6 +333,8 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         uint32 descriptionNr,
         uint32 pixelsNr
     ) private returns(uint256 blockCost) {
+        require(pixelsNr < data.length, "Wrong pixelNr");
+
         Block memory block_ = blk[blockNumber];
         // Forward a maximum of 20000 gas to the previous owner for accepting the refund to avoid griefing attacks
         bool success;
@@ -355,29 +370,39 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         bytes[] memory pixels,
         // Positive numbers refer to existing data. Negative numbers refer to the index in the passed in pixels array
         int32[] memory pixelsNr,
-        uint32 referrer
+        address referrer,
+        uint32 referrerNr
     ) public payable onlyCreationPhase() nonReentrant() {
         if (ownerNr == uint32(-1)) {
             ownerNr = addresses.length.to32();
             addresses.push(owner);
         }
+        require(ownerNr < addresses.length, "Wrong owner");
 
         if (urlNr == uint32(-1)) {
             urlNr = text.length.to32();
             text.push(url);
         }
+        require(urlNr < text.length, "Wrong url");
 
         if (descriptionNr == uint32(-1)) {
             descriptionNr = text.length.to32();
             text.push(description);
         }
+        require(descriptionNr < text.length, "Wrong description");
+
+        if (referrerNr == uint32(-1)) {
+            referrerNr = addresses.length.to32();
+            addresses.push(referrer);
+        }
+        require(referrerNr < addresses.length, "Wrong referrer");
 
         uint256 startPixelNr = data.length;
         for (uint256 i = 0; i < pixels.length; i++) { data.push(pixels[i]); }
 
         uint256 cost;
         for (uint256 i = 0; i < blockNumbers.length; i++) {
-            cost = cost.add(_setBlock(blockNumbers[i], ownerNr, urlNr, descriptionNr, (pixelsNr[i] >=0 ? uint256(pixelsNr[i]) : uint256(1-pixelsNr[i]) + startPixelNr).to32()));
+            cost = cost.add(_setBlock(blockNumbers[i], ownerNr, urlNr, descriptionNr, (pixelsNr[i] >=0 ? uint256(pixelsNr[i]) : startPixelNr + uint256(-1-pixelsNr[i])).to32()));
         }
 
         require(msg.value == cost, "Pixel: not enough funds");
@@ -386,7 +411,7 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         uint256 blocks = blockNumbers.length;
         _mint(msg.sender, blocks.mul(1e20));
         
-        (address lvl1, address lvl2, address lvl3) = _mlm(msg.sender, referrer, blocks.mul(20).to32(), blocks.mul(10).to32(), blocks.mul(5).to32());
+        (address lvl1, address lvl2, address lvl3) = _mlm(msg.sender, referrerNr, blocks.mul(20).to32(), blocks.mul(10).to32(), blocks.mul(5).to32());
         if (lvl1 != address(0)) { _mint(lvl1, blocks.mul(20e18)); }
         if (lvl2 != address(0)) { _mint(lvl2, blocks.mul(10e18)); }
         if (lvl3 != address(0)) { _mint(lvl3, blocks.mul(5e18)); }

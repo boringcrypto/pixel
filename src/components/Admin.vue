@@ -15,9 +15,11 @@
 import { BigNumber, ethers } from "ethers"
 import { defineComponent, PropType } from "vue"
 import { PixelV2 } from "../../types/ethers-contracts"
+import { MaticProvider } from "../classes/MaticProvider"
 import { ProviderInfo } from "../classes/ProviderInfo"
 import { sleep } from "../classes/Utils"
 import { Block } from "../types"
+import { constants } from "../constants/development"
 
 async function blobToHex(data: Blob) {
     return "0x" + [...new Uint8Array(await data.arrayBuffer())].map(x => x.toString(16).padStart(2, '0')).join('');    
@@ -78,36 +80,11 @@ export default defineComponent({
             }
         },
         async test() {
-            let canvas = document.createElement("CANVAS") as HTMLCanvasElement
-            canvas.width = 10
-            canvas.height = 10
-            let ctx = canvas.getContext("2d")
-            if (!ctx) { return }
-
-            let raw = 0
-            let compressed = 0
-
-            for (let b = 0; b < 10000; b++) {
-                let pixels = this.blocks[b].pixels
-                let data: ImageData = ctx.createImageData(10, 10)
-                for(let i = 0; i < 100; i++) {
-                    let hex = pixels.substr(2 + i * 6, 2)
-                    data.data[i * 4] = BigNumber.from("0x" + hex).toNumber()
-                    hex = pixels.substr(4 + i * 6, 2)
-                    data.data[i * 4 + 1] = BigNumber.from("0x" + hex).toNumber()
-                    hex = pixels.substr(6 + i * 6, 2)
-                    data.data[i * 4 + 2] = BigNumber.from("0x" + hex).toNumber()
-                    data.data[i * 4 + 3] = 255
-                }
-                ctx.putImageData(data, 0, 0)
-                let png = await blobToHex(await toBlob(canvas, "image/png"))
-                let jpg = await blobToHex(await toBlob(canvas, "image/jpeg", 0.7))
-                console.log(pixels.length, png.length, jpg.length)
-
-                raw = raw + Math.floor((pixels.length - 2) / 64) + 1
-                compressed = compressed + Math.floor((Math.min(pixels.length, png.length, jpg.length) - 1) / 64) + 1
+            if (window.provider && this.pixel) {
+                const signer = window.provider?.getSigner(this.info.address)
+                const matic = new MaticProvider(constants.network.rpcUrls[0], () => {})
+                matic.provider.send("evm_setNextBlockTimestamp", [Math.floor(Date.now() / 1000)])
             }
-            console.log("Test", raw, compressed)
         },
         logBlocks() { 
             console.log(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex, version: this.version + 1}))

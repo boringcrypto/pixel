@@ -3,6 +3,7 @@ import { Block } from "../types"
 import { PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
 import { ProviderInfo } from "../classes/ProviderInfo"
 import { PixelsToImageData } from "./Blocks";
+import { LocalData } from "./LocalData";
 
 export interface SelectedArea {
     startX: number
@@ -12,6 +13,14 @@ export interface SelectedArea {
     width: number,
     height: number,
     ctx: CanvasRenderingContext2D
+}
+
+function uint32(v: number): BigNumber {
+    let result = BigNumber.from(v)
+    if (result.lt(0)) {
+        return BigNumber.from("2").pow("32").add(result)
+    }
+    return result
 }
 
 async function blobToHex(data: Blob) {
@@ -107,7 +116,7 @@ export async function compressPixels(data: ImageData): Promise<string> {
 
     options.sort((a, b) => a.length - b.length)
 
-    return options[0]
+    return "0x" + options[0]
 }
 
 export async function decompressPixels(hex: string): Promise<ImageData> {
@@ -147,45 +156,45 @@ export async function decompressPixels(hex: string): Promise<ImageData> {
 }
 
 export class Order {
-    width: number
-    height: number
-    blockNumbers: number[]
-    pixels: string[]
-    cost: BigNumber
-    gas: BigNumber
-    gasPrice: BigNumber
-    duplicateBlocks: number
-    url: string
-    description: string
+    width: number = 0
+    height: number = 0
+    blockNumbers: number[] = []
+    pixels: number[] = []
+    newDatas: string[] = []
+    cost: BigNumber = BigNumber.from(0)
+    gas: BigNumber = BigNumber.from(0)
+    gasPrice: BigNumber = BigNumber.from(0)
+    duplicateBlocks: number = 0
+    url: string = ""
+    description: string = ""
     
-    constructor() {
-        this.width = 0
-        this.height = 0
-        this.blockNumbers = []
-        this.pixels = []
-        this.cost = BigNumber.from(0)
-        this.gas = BigNumber.from(0)
-        this.gasPrice = BigNumber.from(0)
-        this.duplicateBlocks = 0
-        this.url = ""
-        this.description = ""
-    }
-
-    async create(area: SelectedArea, blocks: Block[], pixel: PixelV2, provider: ethers.providers.JsonRpcProvider) {
+    async create(area: SelectedArea, data: LocalData, pixel: PixelV2, provider: ethers.providers.JsonRpcProvider) {
         this.duplicateBlocks = 0
         this.width = area.width
         this.height = area.height
         for (let x = 0; x < area.width; x++) {
             for (let y = 0; y < area.height; y++) {
                 let imageData = area.ctx.getImageData(x * 10, y * 10, 10, 10)
-                let hex = await compressPixels(imageData)
+                let raw = imgDataToHex(imageData)
                 let blockNumber = (area.startY + y) * 100 + area.startX + x;
-                if (blocks[blockNumber].pixels != hex) {
+                let originalRaw = data.datas[data.blocks[blockNumber].pixels]
+                if (raw != originalRaw) {
                     this.blockNumbers.push(blockNumber)
-                    this.pixels.push(hex)
+                    let pixelNr = data.datas.indexOf(raw)
+                    if (pixelNr == -1) {
+                        let hex = await compressPixels(imageData)
+                        let newPixelNr = this.newDatas.indexOf(hex)
+                        if (newPixelNr >= 0) {
+                            pixelNr = -(1 + newPixelNr)
+                        } else {
+                            this.newDatas.push(hex)
+                            pixelNr = -this.newDatas.length
+                        }
+                    }
+                    this.pixels.push(pixelNr)
                 } else {
-                    this.url = blocks[blockNumber].url
-                    this.description = blocks[blockNumber].description
+                    this.url = data.texts[data.blocks[blockNumber].url]
+                    this.description = data.texts[data.blocks[blockNumber].description]
                     this.duplicateBlocks++
                 }
             }
@@ -210,14 +219,52 @@ export class Order {
         }
     }
 
-    async buy(pixel: PixelV2, provider: ethers.providers.JsonRpcProvider, info: ProviderInfo, referrer: string) {
+    async buy(pixel: PixelV2, provider: ethers.providers.JsonRpcProvider, data: LocalData, info: ProviderInfo, referrer: string) {
         const signer = provider.getSigner(info.address)
         let p = PixelV2Factory.connect(pixel.address, signer)
-        for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
+        const max_blocks_per_tx = 25
+
+        if (this.blockNumbers.length <= max_blocks_per_tx) {
+            let ownerNr = uint32(data.addresses.indexOf(info.address))
+            let urlNr = uint32(data.texts.indexOf(this.url))
+            let descriptionNr = uint32(data.texts.indexOf(this.description))
+            let referrerNr = uint32(data.addresses.indexOf(referrer))
+            let cost = await p["getCost(uint256[])"](this.blockNumbers)
+            console.log(
+                info.address,
+                ownerNr.toString(),
+                this.url,
+                urlNr.toString(),
+                this.description,
+                descriptionNr.toString(),
+                this.blockNumbers,
+                this.newDatas,
+                this.pixels,
+                referrer,
+                referrerNr.toString()               
+            )
+            p.setBlocks(
+                info.address,
+                ownerNr,
+                this.url,
+                urlNr,
+                this.description,
+                descriptionNr,
+                this.blockNumbers,
+                this.newDatas,
+                this.pixels,
+                referrer,
+                referrerNr, 
+                { value: cost }
+            )
+        } else {
+
+        }
+        /*for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
             let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
             let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
             let cost = await p["getCost(uint256[])"](blockNumbers)
             p["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, referrer || ethers.constants.AddressZero, { value: cost })
-        }
+        }*/
     }
 }
