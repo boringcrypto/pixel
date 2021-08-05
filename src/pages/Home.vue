@@ -201,7 +201,6 @@
     <br>
     <Leaderboard :blocks="blocks" />
     <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :pixel="pixel" :blocks="blocks" :updateIndex="updateIndex" :version="version" />
-    <Clippy @loaded="clippyLoaded"></Clippy>
 </template>
 
 <script lang="ts">
@@ -229,7 +228,6 @@ import BlocksStats from "../components/BlocksStats.vue"
 import DropTarget from "../components/DropTarget.vue"
 import AmbassadorProgram from "../components/AmbassadorProgram.vue"
 import Leaderboard from "../components/Leaderboard.vue"
-import Clippy, { ClippyAgent } from "../components/Clippy.vue"
 import Admin from "../components/Admin.vue"
 import SelectionArea from "../components/SelectionArea.vue"
 import Tooltip from "../components/Tooltip.vue"
@@ -259,7 +257,6 @@ export default defineComponent({
         DropTarget,
         AmbassadorProgram,
         Leaderboard,
-        Clippy,
         Admin,
         SelectionArea,
         Tooltip,
@@ -298,7 +295,6 @@ export default defineComponent({
             edit: false,
 
             mnemonic: "",
-            clippy: null as ClippyAgent | null,
 
             allowance: BigNumber.from("0"),
             migrateBalance: BigNumber.from("0"),
@@ -389,15 +385,6 @@ export default defineComponent({
                     this.buyState = BuyState.None
                 }
             }
-        },
-        clippyLoaded(agent: ClippyAgent) {
-            this.clippy = agent
-            window.setTimeout(() => {
-                window.setTimeout(() => {
-                    this.clippy!.show()
-                    this.clippy!.speak("Welcome to Pixel Inc!")
-                }, 2500)
-            }, 1000)
         },
         async switchToNetwork() {
             await window.ethereum.request({method: 'wallet_addEthereumChain', params: [constants.network]})
@@ -524,9 +511,6 @@ export default defineComponent({
                     }
                 }
             }
-        },
-        agentDo(action: string) {
-            (this.$refs.clippy as typeof Clippy).play(action)
         },
         click(event: Event) {
             if (event.target === this.canvas) {
