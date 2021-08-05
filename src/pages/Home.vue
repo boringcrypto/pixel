@@ -393,17 +393,6 @@ export default defineComponent({
         clippyLoaded(agent: ClippyAgent) {
             this.clippy = agent
             window.setTimeout(() => {
-                let app = document.getElementById("app")
-                if (app) {
-                    app.style.display = "block";
-                }
-                let splash = document.getElementById("splash")
-                if (splash) {
-                    splash.style.display = "none";
-                }
-
-                playSound('/' + randomItem(["win95", "winxp"]) + '.mp3')
-
                 window.setTimeout(() => {
                     this.clippy!.show()
                     this.clippy!.speak("Welcome to Pixel Inc!")
@@ -562,6 +551,16 @@ export default defineComponent({
                     }
                 }
             }
+            let app = document.getElementById("app")
+            if (app) {
+                app.style.display = "block";
+            }
+            let splash = document.getElementById("splash")
+            if (splash) {
+                splash.style.display = "none";
+            }
+
+            playSound('/' + randomItem(["win95", "winxp"]) + '.mp3')
         })
     }
 })
