@@ -87,32 +87,42 @@ function playSound(src: string, volume: number = 1) {
     }
 }
 
-async function compress(str: string): Promise<string> {
-    if (str && CompressionStream) {
-        const byteArray = new TextEncoder().encode(str);
-        const cs = new CompressionStream("gzip");
-        const writer = cs.writable.getWriter();
-        writer.write(byteArray);
-        writer.close();
-        let compressed = await new Response(cs.readable).arrayBuffer();
-        return Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join('')
-    }
+async function compress<T>(obj: T): Promise<string> {
+    let str = JSON.stringify(obj)
+    try {
+        if (str && CompressionStream) {
+            const byteArray = new TextEncoder().encode(str);
+            const cs = new CompressionStream("gzip");
+            const writer = cs.writable.getWriter();
+            writer.write(byteArray);
+            writer.close();
+            let compressed = await new Response(cs.readable).arrayBuffer();
+            return Array.from(new Uint8Array(compressed)).map(n => String.fromCharCode(n)).join('')
+        }
+    } catch {}
     return str || ""
 }
 
-async function decompress(str: string | null): Promise<string> {
-    if (str && DecompressionStream) {
-        let dataNum = []
-        for (var i = 0; i < str.length; i++) {
-            dataNum.push(str.charCodeAt(i));
+async function decompress<T>(str: string | null): Promise<T | null> {
+    try {
+        if (str && DecompressionStream) {
+            let dataNum = []
+            for (var i = 0; i < str.length; i++) {
+                dataNum.push(str.charCodeAt(i));
+            }
+            const cs = new DecompressionStream("gzip");
+            const writer = cs.writable.getWriter();
+            writer.write(Uint8Array.from(dataNum));
+            writer.close();
+            str = new TextDecoder().decode(await new Response(cs.readable).arrayBuffer())
         }
-        const cs = new DecompressionStream("gzip");
-        const writer = cs.writable.getWriter();
-        writer.write(Uint8Array.from(dataNum));
-        writer.close();
-        return new TextDecoder().decode(await new Response(cs.readable).arrayBuffer())
-    }
-    return str || "";
+    } catch {}
+
+    try {
+        return JSON.parse(str || "");
+    } catch {}
+
+    return null
 }
 
 export {

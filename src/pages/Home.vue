@@ -5,25 +5,6 @@
                 <PixelLogo />
             </td>
             <td style="vertical-align: bottom">
-                <div style="margin-left: auto; width: 340px; background-color: #ccc; color: black; border: 1px solid rgb(169, 216,235); margin-bottom: 8px; padding: 8px">
-                    <a href="https://snapshot.org/#/pixelinc.eth/proposal/QmVxXwALTod3uvmiYLo4wXscLUyD38DKDP34s66ahP7uY8" target="_blank">
-                        We're moving to Ethereum!
-                    </a>
-                    <p>
-                        To move your PIXEL tokens to Ethereum mainnet, you can migrate them here. Once we launch on mainnet, the PIXEL tokens will be airdropped into your Ethereum wallet with the same address.
-                    </p>
-                    <span v-if="info.address && pollInfo && pollInfo.balance.gt(0)">
-                        <button v-if="allowance.lt(pollInfo.balance)" @click="allow">
-                            Allow
-                        </button>
-                        <button v-else @click="migrate">
-                            Migrate {{ pollInfo.balance.print(18, 0) }} PIXEL tokens
-                        </button>
-                    </span>
-                    <p v-if="migrateBalance.gt(0)">
-                        In migration: {{ migrateBalance.print(18, 0) }} PIXEL
-                    </p>
-                </div>
                 <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
                 <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
                 <button v-if="!wrongNetwork && info.address" @click="buyState = BuyState.SelectImage" class="upload-button">Upload your own pixels</button>
@@ -43,35 +24,28 @@
                     {{ info.address }}
                 </span>
                 <br><br>
-                <table v-if="pollInfo" style="margin-left: auto;">
+                <table style="margin-left: auto;">
                     <tbody>
                         <tr>
                             <td style="border: 3px ridge; padding: 4px;">Total PIXELs</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ pollInfo.supply.print(18, 0) }}</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ data.supply.print(18, 0) }}</td>
                         </tr>
                         <tr v-if="info.address">
                             <td style="border: 3px ridge; padding: 4px;">You own</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ pollInfo.balance.print(18, 0) }}</td>
-                        </tr>
-                        <tr v-if="lpBalance.gt(0)">
-                            <td style="border: 3px ridge; padding: 4px;">Staked LP</td>
-                            <td style="border: 3px ridge; padding: 4px;">
-                                {{ lpBalance.print(18, 0) }}&nbsp;
-                                <button @click="unstake">Unstake</button>
-                            </td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ data.userInfo.balance.print(18, 0) }}</td>
                         </tr>
                     </tbody>
                 </table>
                 <br>
-                <Countdown :goal="startTimeStamp">
+                <Countdown :goal="data.startTimeStamp">
                     <template v-slot:before>
                         <strong>Creation Phase</strong><br>
                         starting in
                     </template>
-                    <Countdown :goal="lockTimeStamp">
+                    <Countdown :goal="data.lockTimeStamp">
                         <template v-slot:before>
                             <strong>Creation Phase</strong><br>
-                            <BlocksStats :blocks="blocks" /><br>
+                            <BlocksStats :blocks="data.blocks" /><br>
                             ends in
                         </template>
                         <strong>Canvas NFT Phase</strong><br>
@@ -84,8 +58,8 @@
 
     <SelectionArea :image="image" :select="buyState == BuyState.DrawArea" @select="areaSelected" style="position: relative; width: 1000px; height: 1000px; background-color: rgb(40, 95, 170); border: 1px solid rgb(169, 216,235); margin-left: auto; margin-right: auto;">
         <canvas id="canvas" width="1000" height="1000" @click="click" @mousemove="mousemove" @mouseleave="mouseleave" style="cursor: pointer;" />
-        <Tooltip v-if="buyState != BuyState.SelectImage" ref="tooltip" :info="info" :blocks="blocks" :mx="mx" :my="my" />
-        <Loading v-if="loading" />
+        <Tooltip v-if="buyState != BuyState.SelectImage" ref="tooltip" :info="info" :data="data" :mx="mx" :my="my" />
+        <Loading v-if="data.loading" />
 
         <div v-if="buyState == BuyState.SelectImage" class="window" style="position: absolute; top: 50%; left: 50%; margin-right: -50%; transform: translate(-50%, -50%); max-width: 400px;">
             <div class="title-bar">
@@ -132,14 +106,14 @@
                 <h3 style="font-family: Comic Sans MS; font-size: 1.5em">Step 3. Purchase</h3>
                 <p>
                     Size: {{ order.width * 10 }}x{{ order.height * 10 }} pixels<br>
-                    Pixel cost: {{ order.cost.print(18, 0) }} MATIC<br>
-                    Gas costs (est): {{ order.gas.mul(order.gasPrice).print(18, 0)}} MATIC ({{ order.gasPrice.print(9, 0) }} gwei)<br>
+                    Pixel cost: {{ order.cost.print(18, 0) }} ETH<br>
+                    Gas costs (est): {{ order.gas.mul(order.gasPrice).print(18, 0)}} ETH ({{ order.gasPrice.print(9, 0) }} gwei)<br>
                     You will receive {{ (order.width * order.height - order.duplicateBlocks) * 100 }} PIXEL tokens
+                    <span v-if="order.duplicateBlocks"><br>{{ order.duplicateBlocks * 100 }} duplicate pixels found, ignored</span>
                     <span v-if="order.width * order.height - order.duplicateBlocks > 25">
                         <br><br>
-                        They area is too large for a single transaction. <strong>{{ Math.ceil((order.width * order.height - order.duplicateBlocks) / 25) }} transactions will be queued</strong>. If any of the transactions fail, you can simply redo it with the same image and the same area. Any blocks of pixels already succesfully bought will be ignored (not bought again).
+                        You selected a large area and this purchase might be split into multiple transactions. If any of the transactions fail, you can simply redo it with the same image and the same area. Any blocks of pixels already succesfully bought will be ignored (not bought again).
                     </span>
-                    <span v-if="order.duplicateBlocks"><br>{{ order.duplicateBlocks * 100 }} duplicate pixels found, ignored</span>
                 </p>
                 <div class="field-row-stacked" style="width: 100%">
                     <label for="url">URL</label>
@@ -159,7 +133,7 @@
     <table style="width: 1004px; margin: auto; border-spacing: 0;">
         <tr>
             <td style="vertical-align: top; padding-top: 20px">
-                <AmbassadorProgram :info="info" :pollInfo="pollInfo" />
+                <AmbassadorProgram :info="info" :data="data" />
                 <div style="text-align: left; vertical-align: top; padding-top: 10px;">
                     <SocialButtons></SocialButtons>
                 </div>
@@ -199,8 +173,8 @@
         </tr>
     </table>
     <br>
-    <Leaderboard :blocks="blocks" />
-    <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :pixel="pixel" :blocks="blocks" :updateIndex="updateIndex" :version="version" />
+    <Leaderboard :data="data" />
+    <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :data="data" :updateIndex="data.updateIndex" :version="data.version" />
 </template>
 
 <script lang="ts">
@@ -209,16 +183,13 @@
 
 import {defineComponent, PropType } from "@vue/runtime-core"
 import { ProviderInfo } from "../classes/ProviderInfo"
-import * as Cache from "../cache.json"
-import { MiniChefV2, MiniChefV2Factory, PixelMigrator, PixelMigratorFactory, PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
-import { BigNumber } from "@ethersproject/bignumber"
-import { PollInfo } from "../types"
+import { PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
 import { nextTick } from "process"
 import { ethers } from "ethers"
 import { constants } from "../constants/live"
-import { sleep, playSound, randomItem, decompress, compress } from "../classes/Utils"
-import { MaticProvider } from "../classes/MaticProvider"
-import { Blocks, PixelsToImageData } from "../classes/Blocks"
+import { playSound, randomItem } from "../classes/Utils"
+import { PixelsToImageData } from "../classes/Blocks"
+import { LocalData } from "../classes/LocalData"
 import { Order, SelectedArea } from "../classes/Order"
 
 import Countdown from "../components/Countdown.vue"
@@ -262,26 +233,12 @@ export default defineComponent({
         Tooltip,
         Loading
     },
-    setup() {
-        return {
-            matic: null as MaticProvider | null,
-            pixel: null as PixelV2 | null,
-            migrator: null as PixelMigrator | null,
-            minichef: null as MiniChefV2 | null
-        }
-    },
     data() {
         return {
             BuyState,
-            loading: false,
-            startTimeStamp: 0,
-            lockTimeStamp: 0,
 
-            pollInfo: null as PollInfo | null,
-            updateIndex: 0,
-            version: 0,
+            data: new LocalData(),
 
-            blocks: Blocks.empty([]),
             canvas: null as HTMLCanvasElement | null,
             image: null as HTMLImageElement | null,
 
@@ -291,74 +248,27 @@ export default defineComponent({
 
             buyState: BuyState.None,
             order: new Order(),
-
-            edit: false,
-
-            mnemonic: "",
-
-            allowance: BigNumber.from("0"),
-            migrateBalance: BigNumber.from("0"),
-            lpBalance: BigNumber.from("0")
         }
     },
     async created() {
-        this.matic = new MaticProvider(constants.network.rpcUrls[0], () => {
-            this.newBlock()
-        })
-        this.pixel = PixelV2Factory.connect(constants.pixel, this.matic.provider)
-        this.migrator = PixelMigratorFactory.connect(constants.migrator, this.matic.provider)
-        this.minichef = MiniChefV2Factory.connect(constants.minichef, this.matic.provider)
-
-        let dataStr = localStorage.getItem("data")
-        if (dataStr) {
-            let result = await decompress(dataStr)
-            let data = JSON.parse(result)
-            this.blocks = data.blocks
-            this.updateIndex = data.updateIndex
-            this.version = data.version || 0
-        }
-
-        if (this.version < Cache.version || this.updateIndex < Cache.updateIndex) {
-            this.blocks = Cache.blocks
-            this.updateIndex = Cache.updateIndex
-            this.version = Cache.version
-        }
-
-        this.startTimeStamp = (await this.pixel.START_TIMESTAMP()).toNumber()
-        this.lockTimeStamp = (await this.pixel.LOCK_TIMESTAMP()).toNumber()
+        await this.data.load()
     },
     computed: {
         chainName() { return constants.network.chainName },
         contractAddress() { return constants.pixel },
         contractURL() { return constants.network.blockExplorerUrls[0] + 'address/' + constants.pixel + "#code" },
         wrongNetwork(): boolean { return this.info.chainId != constants.chainId },
-        referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero },
+        referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero }
     },
     watch: {
         'info.address': function() {
             this.newBlock()
+        },
+        'info.chainId': function() {
+            console.log(this.info.chainId)
         }
     },
     methods: {
-        allow() {
-            if (window.provider && this.pixel && this.migrator) {
-                const signer = window.provider.getSigner(this.info.address)
-                this.pixel.connect(signer).approve(this.migrator.address, ethers.constants.MaxUint256)
-            }
-        },
-        migrate() {
-            if (window.provider && this.pixel && this.migrator && this.pollInfo) {
-                const signer = window.provider.getSigner(this.info.address)
-                this.migrator.connect(signer).Migrate(this.pollInfo?.balance)
-            }
-        },
-        unstake() {
-            if (window.provider && this.minichef) {
-                const signer = window.provider.getSigner(this.info.address)
-                let minichef = this.minichef.connect(signer)
-                minichef.withdrawAndHarvest(25, this.lpBalance, this.info.address)
-            }
-        },
         mousemove(event: MouseEvent) {
             if (event.target === this.canvas) {
                 this.mouseBelowHalf = event.offsetY > 500
@@ -376,11 +286,13 @@ export default defineComponent({
             this.buyState = BuyState.DrawArea
         },
         async areaSelected(area: SelectedArea) {
-            if (this.pixel && window.provider) {
+            if (window.provider) {
                 this.order = new Order()
-                await this.order.create(area, this.blocks, this.pixel, window.provider)
+                let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
+                await this.order.create(area, this.data, pixel)
                 if (this.order.cost.gt("0")) {
                     this.buyState = BuyState.Buy
+                    this.image = null
                 } else {
                     this.buyState = BuyState.None
                 }
@@ -389,127 +301,28 @@ export default defineComponent({
         async switchToNetwork() {
             await window.ethereum.request({method: 'wallet_addEthereumChain', params: [constants.network]})
         },
+        drawBlocks(blocks: number[]) {
+            let ctx = this.canvas?.getContext("2d")
+            blocks.forEach(blockNumber => {
+                let block = this.data.blocks[blockNumber]
+                ctx!.putImageData(PixelsToImageData(ctx!, this.data.datas[block.pixels]), (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
+            })
+        },
         async newBlock() {
             let ctx = this.canvas?.getContext("2d")
-            if (ctx && this.pixel && !this.edit) {
+            if (ctx && window.provider) {
                 console.log("Polling for new data")
 
-                let pollInfo = await this.pixel!.poll(this.info.address || ethers.constants.AddressZero)
-                this.pollInfo = {
-                    updates: pollInfo.updates_,
-                    balance: pollInfo.balance,
-                    supply: pollInfo.supply,
-                    downline: {
-                        tier1: pollInfo.downline_.tier1,
-                        tier2: pollInfo.downline_.tier2,
-                        tier3: pollInfo.downline_.tier3,
-                        earnings1: pollInfo.downline_.earnings1,
-                        earnings2: pollInfo.downline_.earnings2,
-                        earnings3: pollInfo.downline_.earnings3
-                    },
-                    upline: pollInfo.upline_
-                }
-
-                if (this.migrator) {
-                    this.allowance = await this.pixel.allowance(this.info.address, this.migrator.address)
-                    this.migrateBalance = await this.migrator.deposited(this.info.address)
-                }
-                if (this.minichef) {
-                    this.lpBalance = (await this.minichef.userInfo(25, this.info.address))[0]
-                }
-
-                let currentUpdatesCount = this.pollInfo.updates.toNumber()
-                if (this.loading) { return; }
-                if (currentUpdatesCount > this.updateIndex) {
-                    this.loading = true
-                }
-                let updateBlockSize = 1000
-                let updates: any[] = []
-                let newUpdates: any[] = []
-                while (currentUpdatesCount > this.updateIndex) {
-                    console.log("Getting", this.updateIndex, currentUpdatesCount)
-                    let success = false
-                    while (!success) {
-                        try {
-                            newUpdates = await this.pixel.getUpdates(this.updateIndex, updateBlockSize)
-                            updates = updates.concat(newUpdates)
-                            success = true
-                        } catch {
-                            await sleep(10000)
-                        }
-                    }
-                    this.updateIndex = this.updateIndex + newUpdates.length
-                }
-                updates = [...new Set(updates.map(bn => bn.toNumber()))]
-                if (updates) {
-                    while (updates.length) {
-                        console.log(updates.length, "left")
-                        let success = false
-                        let updatedBlocks: any[] = []
-                        while (!success) {
-                            try {
-                                updatedBlocks = await this.pixel.getBlocks(updates.splice(0, 100))
-                                success = true
-                            } catch {
-                                await sleep(10000)
-                            }
-                        }
-
-                        updatedBlocks.forEach(block => {
-                            Blocks.loadFromChain(this.blocks, block)
-
-                            if (block.pixels && ctx) {
-                                let data: ImageData = ctx.createImageData(10, 10)
-                                for(let i = 0; i < 100; i++) {
-                                    let hex = block.pixels.substr(2 + i * 6, 2)
-                                    data.data[i * 4] = BigNumber.from("0x" + hex).toNumber()
-                                    hex = block.pixels.substr(4 + i * 6, 2)
-                                    data.data[i * 4 + 1] = BigNumber.from("0x" + hex).toNumber()
-                                    hex = block.pixels.substr(6 + i * 6, 2)
-                                    data.data[i * 4 + 2] = BigNumber.from("0x" + hex).toNumber()
-                                    data.data[i * 4 + 3] = 255
-                                }
-                                ctx.putImageData(data, (block.number % 100) * 10, Math.floor(block.number / 100) * 10)
-                            }
-                        })
-                    }
-
-                    localStorage.setItem("data", await compress(JSON.stringify({blocks: this.blocks, updateIndex: this.updateIndex, version: this.version})))
-                }
-                this.loading = false
+                let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
+                await this.data.update(pixel, this.info.address, this.drawBlocks)
             }
         },
         async buy() {
             this.image = null
             this.buyState = BuyState.None
-            if (!this.edit) {
-                if (this.pixel && window.provider) {
-                    this.order.buy(this.pixel, window.provider, this.info, this.referrerClean)
-                }
-            } else {
-                let ctx = this.canvas?.getContext("2d")
-
-                for (let n = 0; n < this.order.blockNumbers.length; n++) {
-                    let blockNumber = this.order.blockNumbers[n]
-                    let pixels = this.order.pixels[n]
-                    this.blocks[blockNumber].url = "https://www.youtube.com/watch?v=4q1dgn_C0AU"
-                    this.blocks[blockNumber].description = "Don't worry, be happy"
-                    this.blocks[blockNumber].pixels = pixels
-
-                    if (pixels && ctx) {
-                        let data: ImageData = ctx.createImageData(10, 10)
-                        for(let i = 0; i < 100; i++) {
-                            let hex = pixels.substr(2 + i * 6, 2)
-                            data.data[i * 4] = BigNumber.from("0x" + hex).toNumber()
-                            hex = pixels.substr(4 + i * 6, 2)
-                            data.data[i * 4 + 1] = BigNumber.from("0x" + hex).toNumber()
-                            hex = pixels.substr(6 + i * 6, 2)
-                            data.data[i * 4 + 2] = BigNumber.from("0x" + hex).toNumber()
-                            data.data[i * 4 + 3] = 255
-                        }
-                        ctx.putImageData(data, (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
-                    }
-                }
+            if (window.provider) {
+                let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
+                this.order.buy(pixel, window.provider, this.data, this.info, this.referrerClean, this.drawBlocks)
             }
         },
         click(event: Event) {
@@ -527,11 +340,10 @@ export default defineComponent({
             let ctx = this.canvas?.getContext("2d")
             if (ctx) {
                 ctx.imageSmoothingEnabled= false
+                console.log("Drawing")
                 for (let b = 0; b < 10000; b++) {
-                    let block = this.blocks[b]
-                    let pixels = block.pixels
-                    if (pixels) {
-                        ctx.putImageData(PixelsToImageData(ctx, pixels), (b % 100) * 10, Math.floor(b / 100) * 10)
+                    if (this.data.blocks[b].pixels) {
+                        ctx.putImageData(PixelsToImageData(ctx, this.data.datas[this.data.blocks[b].pixels]), (b % 100) * 10, Math.floor(b / 100) * 10)
                     }
                 }
             }

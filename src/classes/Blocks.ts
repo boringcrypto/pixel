@@ -11,6 +11,45 @@ interface ChainBlock {
     pixels: string
 }
 
+export class Canvas {
+    blocks: Block[] = []
+    text: {[key: string]: number} = {}
+    textCount: number = 1
+    data: {[key: string]: number} = {}
+    dataCount = 1
+    addresses: {[key: string]: number} = {}
+    addressesCount = 1
+    pixels: {[key: string]: number} = {}
+
+    newPixels: string[] = []
+
+    constructor() {
+        this.blocks = Blocks.empty([])
+        this.text[""] = 0
+    }
+
+    reset() {
+        this.newPixels = []
+    }
+
+    addText(t: string) {
+        if (!this.text[t]) {
+            this.text[t] = this.textCount++
+        }
+    }
+
+    addPixels(p: string): number {
+        if (this.pixels[p]) {
+            return this.pixels[p]
+        }
+        if (this.newPixels.indexOf(p) >= 0) {
+            return -(1 + this.newPixels.indexOf(p))
+        }
+        this.newPixels.push(p)
+        return -this.newPixels.length
+    }
+}
+
 let Blocks = {
     clear(blocks: Block[]) {
         while (blocks.length) {
@@ -22,21 +61,13 @@ let Blocks = {
         this.clear(blocks)
         for (let i = 0; i < 10000; i++) { 
             blocks.push({
-                owner: "",
+                owner: 0,
                 lastPrice: 0,
-                url: "",
-                description: "",
-                pixels: ""
+                url: 0,
+                description: 0,
+                pixels: 0
             })
         }
-        return blocks
-    },
-    loadFromChain(blocks: Block[], block: ChainBlock) {
-        blocks[block.number].owner = block.owner
-        blocks[block.number].lastPrice = block.lastPrice.toDec(18).toNumber()
-        blocks[block.number].url = cleanURI(block.url)
-        blocks[block.number].description = block.description
-        blocks[block.number].pixels = block.pixels        
         return blocks
     }
 }

@@ -1,26 +1,30 @@
 import { BigNumber } from "@ethersproject/bignumber"
 
 type Block = {
-    owner: string,
+    owner: number,
     lastPrice: number,
-    url: string,
-    description: string,
-    pixels: string
+    url: number,
+    description: number,
+    pixels: number
 }
 
 type PollInfo = {
-    updates: BigNumber;
+    updates_: BigNumber;
+    addresses_: BigNumber;
+    text_: BigNumber;
+    data_: BigNumber;
     balance: BigNumber;
     supply: BigNumber;
-    upline: string;
-    downline: {
-      earnings1: BigNumber;
-      earnings2: BigNumber;
-      earnings3: BigNumber;
+    mlm_: {
+      upline: number;
+      earnings1: number;
+      earnings2: number;
+      earnings3: number;
       tier1: number;
       tier2: number;
       tier3: number;
-    }
+    };
+    upline_: string;
 }
 
 export {

@@ -1,9 +1,3 @@
-<style lang="scss">
-    body {
-        background-image: url('/src/assets/bgPattern.png');
-    }
-</style>
-
 <template>
     <div style="text-align: center;">
         <Web3 :info="info"></Web3>
