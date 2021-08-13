@@ -11,6 +11,5 @@
         "lib": ["esnext", "dom"],
         "types": ["vite/client", "node"]
     },
-    "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
-    "files": ["./hardhat.config.ts", "hardhatscan.ts"]
+    "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"]
 }

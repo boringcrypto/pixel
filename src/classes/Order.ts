@@ -169,7 +169,7 @@ export class Order {
     url: string = ""
     description: string = ""
     
-    async create(area: SelectedArea, data: LocalData, pixel: PixelV2, provider: ethers.providers.JsonRpcProvider) {
+    async create(area: SelectedArea, data: LocalData, pixel: PixelV2) {
         this.duplicateBlocks = 0
         this.width = area.width
         this.height = area.height
@@ -195,9 +195,7 @@ export class Order {
         }
 
         if (this.blockNumbers.length) {
-            if (provider && pixel) {
-                this.cost = await pixel["getCost(uint256[])"](this.blockNumbers)
-            }
+            this.cost = await pixel["getCost(uint256[])"](this.blockNumbers)
         }
     }
 

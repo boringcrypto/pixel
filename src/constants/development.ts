@@ -15,8 +15,6 @@ let constants: Constants = {
         rpcUrls: ['http://localhost:8545'],
         blockExplorerUrls: ['https://localhost/'],
     },
-    pixel: PixelDeployment.address,
-    migrator: "",
-    minichef: ""
+    pixel: PixelDeployment.address
 }
 export { constants }

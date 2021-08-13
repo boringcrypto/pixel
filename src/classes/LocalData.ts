@@ -227,11 +227,6 @@ export class LocalData {
     }
 
     async update(pixel: PixelV2, address: string, onBlocks: (onBlocks: number[]) => void) {
-        if (!this.startTimeStamp) {
-            this.startTimeStamp = (await pixel.START_TIMESTAMP()).toNumber()
-            this.lockTimeStamp = (await pixel.LOCK_TIMESTAMP()).toNumber()
-        }
-
         // Get pollInfo
         let pollInfo = await pixel.poll(address)
         this.userInfo.load(pollInfo)

@@ -2,17 +2,17 @@
     <div v-if="tooltip" class="window" :style="tooltipStyle">
         <div class="window-body" style="min-height: 50px">
             <img ref="preview" :src="dataUrl" style="width: 50px; height: 50px; float: left; image-rendering: pixelated;" />
-            <span v-if="tooltipBlock.owner">
-                {{ data.texts[tooltipBlock.description] }}<br>
-                <a>{{ data.texts[tooltipBlock.url] }}</a>
+            <span v-if="tooltipBlock?.owner">
+                {{ data.texts[tooltipBlock?.description || 0] }}<br>
+                <a>{{ data.texts[tooltipBlock?.url || 0] }}</a>
             </span>
             <span v-else>
                 Unowned
             </span>
         </div>
         <div class="status-bar">
-            <p class="status-bar-field">{{ (tooltipBlock.lastPrice || 0) * 2 || 0.005 }} ETH per 100 pixels</p>
-            <p class="status-bar-field">{{ tooltipBlock.owner ? data.texts[tooltipBlock.owner].toLowerCase() == info.address.toLowerCase() ? "Owned by you!" : "Owned by other" : "Unowned" }}</p>
+            <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 2 || 0.005 }} ETH per 100 pixels</p>
+            <p class="status-bar-field">{{ tooltipBlock?.owner ? data.texts[tooltipBlock?.owner || 0].toLowerCase() == info.address.toLowerCase() ? "Owned by you!" : "Owned by other" : "Unowned" }}</p>
         </div>
         <div v-if="tooltipBlock?.owner" class="status-bar">
             <p class="status-bar-field">{{ data.addresses[tooltipBlock.owner] }}</p><br>

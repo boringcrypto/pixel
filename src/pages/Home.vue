@@ -174,7 +174,7 @@
     </table>
     <br>
     <Leaderboard :data="data" />
-    <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :pixel="pixel" :blocks="data.blocks" :updateIndex="data.updateIndex" :version="data.version" />
+    <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :data="data" :updateIndex="data.updateIndex" :version="data.version" />
 </template>
 
 <script lang="ts">
@@ -187,11 +187,10 @@ import { PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
 import { nextTick } from "process"
 import { ethers } from "ethers"
 import { constants } from "../constants/live"
-import { sleep, playSound, randomItem } from "../classes/Utils"
-import { MaticProvider } from "../classes/MaticProvider"
+import { playSound, randomItem } from "../classes/Utils"
 import { PixelsToImageData } from "../classes/Blocks"
 import { LocalData } from "../classes/LocalData"
-import { decompressPixels, Order, SelectedArea } from "../classes/Order"
+import { Order, SelectedArea } from "../classes/Order"
 
 import Countdown from "../components/Countdown.vue"
 import PixelLogo from "../components/PixelLogo.vue"
@@ -234,12 +233,6 @@ export default defineComponent({
         Tooltip,
         Loading
     },
-    setup() {
-        return {
-            matic: null as MaticProvider | null,
-            pixel: null as PixelV2 | null
-        }
-    },
     data() {
         return {
             BuyState,
@@ -258,29 +251,21 @@ export default defineComponent({
         }
     },
     async created() {
-        this.matic = new MaticProvider(constants.network.rpcUrls[0], () => { this.newBlock() })
-        this.pixel = PixelV2Factory.connect(constants.pixel, this.matic.provider)
-
-        console.log("Loading")
         await this.data.load()
-        console.log("Loaded")
-
-        // Remove this?
-        this.data.startTimeStamp = (await this.pixel.START_TIMESTAMP()).toNumber()
-        if (!this.data.startTimeStamp) {
-            //await new Deployer().deploy()
-        }
     },
     computed: {
         chainName() { return constants.network.chainName },
         contractAddress() { return constants.pixel },
         contractURL() { return constants.network.blockExplorerUrls[0] + 'address/' + constants.pixel + "#code" },
-        wrongNetwork(): boolean { console.log(this.info.chainId, constants.chainId); return this.info.chainId != constants.chainId },
-        referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero },
+        wrongNetwork(): boolean { return this.info.chainId != constants.chainId },
+        referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero }
     },
     watch: {
         'info.address': function() {
             this.newBlock()
+        },
+        'info.chainId': function() {
+            console.log(this.info.chainId)
         }
     },
     methods: {
@@ -301,18 +286,13 @@ export default defineComponent({
             this.buyState = BuyState.DrawArea
         },
         async areaSelected(area: SelectedArea) {
-            if (this.pixel && window.provider) {
+            if (window.provider) {
                 this.order = new Order()
-                await this.order.create(area, this.data, this.pixel, window.provider)
-                console.log(this.order)
+                let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
+                await this.order.create(area, this.data, pixel)
                 if (this.order.cost.gt("0")) {
                     this.buyState = BuyState.Buy
                     this.image = null
-                    
-                    /*let ctx = this.canvas?.getContext("2d")
-                    for (let i = 0; i < this.order.blockNumbers.length; i++) {
-                        ctx!.putImageData(await decompressPixels(this.order.pixels[i]), ( this.order.blockNumbers[i] % 100) * 10, Math.floor( this.order.blockNumbers[i] / 100) * 10)
-                    }*/
                 } else {
                     this.buyState = BuyState.None
                 }
@@ -330,22 +310,19 @@ export default defineComponent({
         },
         async newBlock() {
             let ctx = this.canvas?.getContext("2d")
-            if (ctx && this.pixel){// && this.data.startTimeStamp) {
+            if (ctx && window.provider) {
                 console.log("Polling for new data")
 
-                if (!this.data.lockTimeStamp) {
-                    this.data.startTimeStamp = (await this.pixel.START_TIMESTAMP()).toNumber()
-                    this.data.lockTimeStamp = (await this.pixel.LOCK_TIMESTAMP()).toNumber()
-                }
-
-                await this.data.update(this.pixel, this.info.address, this.drawBlocks)
+                let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
+                await this.data.update(pixel, this.info.address, this.drawBlocks)
             }
         },
         async buy() {
             this.image = null
             this.buyState = BuyState.None
-            if (this.pixel && window.provider) {
-                this.order.buy(this.pixel, window.provider, this.data, this.info, this.referrerClean, this.drawBlocks)
+            if (window.provider) {
+                let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
+                this.order.buy(pixel, window.provider, this.data, this.info, this.referrerClean, this.drawBlocks)
             }
         },
         click(event: Event) {
