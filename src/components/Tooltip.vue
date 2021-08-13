@@ -11,7 +11,7 @@
             </span>
         </div>
         <div class="status-bar">
-            <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 2 || 0.005 }} ETH per 100 pixels</p>
+            <p class="status-bar-field">{{ (tooltipBlock?.lastPrice || 0) * 2 || 0.005 }} ETH per 10x10 pixels</p>
             <p class="status-bar-field">{{ tooltipBlock?.owner ? data.texts[tooltipBlock?.owner || 0].toLowerCase() == info.address.toLowerCase() ? "Owned by you!" : "Owned by other" : "Unowned" }}</p>
         </div>
         <div v-if="tooltipBlock?.owner" class="status-bar">
