@@ -85,6 +85,10 @@ export default defineComponent({
                 props.info.connected = false
                 props.info.block = 0
             })
+            window.provider?.on("block", (blockNumber: number) => {
+                console.log("Block", blockNumber)
+                props.info.block = blockNumber
+            })
 
             props.info.connected = window.ethereum.isConnected()
             if (props.info.connected) {

@@ -264,6 +264,9 @@ export default defineComponent({
         'info.address': function() {
             this.newBlock()
         },
+        'info.block': function() {
+            this.newBlock()
+        },
         'info.chainId': function() {
             console.log(this.info.chainId)
         }
