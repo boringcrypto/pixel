@@ -159,7 +159,8 @@ export class Order {
     width: number = 0
     height: number = 0
     blockNumbers: number[] = []
-    pixels: number[] = []
+    pixels: string[] = []
+    imgDatas: ImageData[] = []
     newDatas: string[] = []
     cost: BigNumber = BigNumber.from(0)
     gas: BigNumber = BigNumber.from(0)
@@ -180,18 +181,11 @@ export class Order {
                 let originalRaw = data.datas[data.blocks[blockNumber].pixels]
                 if (raw != originalRaw) {
                     this.blockNumbers.push(blockNumber)
-                    let pixelNr = data.datas.indexOf(raw)
-                    if (pixelNr == -1) {
-                        let hex = await compressPixels(imageData)
-                        let newPixelNr = this.newDatas.indexOf(hex)
-                        if (newPixelNr >= 0) {
-                            pixelNr = -(1 + newPixelNr)
-                        } else {
-                            this.newDatas.push(hex)
-                            pixelNr = -this.newDatas.length
-                        }
+                    if (data.datas.indexOf(raw) == -1 && this.newDatas.indexOf(raw) == -1) {
+                        this.newDatas.push(raw)
                     }
-                    this.pixels.push(pixelNr)
+                    this.pixels.push(raw)
+                    this.imgDatas.push(imageData)
                 } else {
                     this.url = data.texts[data.blocks[blockNumber].url]
                     this.description = data.texts[data.blocks[blockNumber].description]
@@ -207,64 +201,83 @@ export class Order {
         }
     }
 
-    async estimateGas(pixel: PixelV2, provider: ethers.providers.JsonRpcProvider, referrer: string) {
-        this.gasPrice = await provider.getGasPrice()
-        this.gas = BigNumber.from("0")
-        for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
-            let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
-            let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
-            let cost = await pixel["getCost(uint256[])"](blockNumbers)
-            //let gas = await pixel.estimateGas["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, referrer || ethers.constants.AddressZero, { value: cost })
-            //this.gas = this.gas.add(gas)
-        }
-    }
-
-    async buy(pixel: PixelV2, provider: ethers.providers.JsonRpcProvider, data: LocalData, info: ProviderInfo, referrer: string) {
+    async buy(pixel: PixelV2, provider: ethers.providers.JsonRpcProvider, data: LocalData, info: ProviderInfo, referrer: string, onBlocks: (blocks: number[]) => void) {
         const signer = provider.getSigner(info.address)
         let p = PixelV2Factory.connect(pixel.address, signer)
-        const max_blocks_per_tx = 25
 
-        if (this.blockNumbers.length <= max_blocks_per_tx) {
-            let ownerNr = uint32(data.addresses.indexOf(info.address))
-            let urlNr = uint32(data.texts.indexOf(this.url))
-            let descriptionNr = uint32(data.texts.indexOf(this.description))
-            let referrerNr = uint32(data.addresses.indexOf(referrer))
-            let cost = await p["getCost(uint256[])"](this.blockNumbers)
-            console.log(
-                info.address,
-                ownerNr.toString(),
-                this.url,
-                urlNr.toString(),
-                this.description,
-                descriptionNr.toString(),
-                this.blockNumbers,
-                this.newDatas,
-                this.pixels,
-                referrer,
-                referrerNr.toString()               
-            )
-            p.setBlocks(
-                info.address,
-                ownerNr,
-                this.url,
-                urlNr,
-                this.description,
-                descriptionNr,
-                this.blockNumbers,
-                this.newDatas,
-                this.pixels,
-                referrer,
-                referrerNr, 
-                { value: cost }
-            )
-        } else {
+        let ownerNr = uint32(data.addresses.indexOf(info.address))
+        let urlNr = uint32(data.texts.indexOf(this.url))
+        let descriptionNr = uint32(data.texts.indexOf(this.description))
+        let referrerNr = uint32(data.addresses.indexOf(referrer))
 
+        let base_gas_estimate = 
+            (ownerNr.eq("4294967295") ? 40000 : 0) +
+            (urlNr.eq("4294967295") ? Math.ceil(this.url.length / 8) * 20000 : 0) +
+            (descriptionNr.eq("4294967295") ? Math.ceil(this.description.length / 8) * 20000 : 0) +
+            (referrerNr.eq("4294967295") ? 40000 : 0)
+        let gas_estimate = base_gas_estimate
+        let blockNumbers: number[] = []
+        let pixels: string[] = []
+        let compressed: string[] = []
+        let pixelsNr: number[] = []
+        while (this.blockNumbers.length) {
+            blockNumbers.push(this.blockNumbers.splice(0, 1)[0])
+            let raw = this.pixels.splice(0, 1)[0]
+            let imgData = this.imgDatas.splice(0, 1)[0]
+            // Pixels already on contract
+            if (data.datas.indexOf(raw) != -1) {
+                pixelsNr.push(data.datas.indexOf(raw))
+            } else {
+                // New pixels
+                if (pixels.indexOf(raw) == -1) {
+                    pixels.push(raw)
+                    let hex = await compressPixels(imgData)
+                    compressed.push(hex)
+                    gas_estimate += 20000 + Math.ceil(hex.length / 64) * 20000
+                }
+                pixelsNr.push(-1-pixels.indexOf(raw))
+            }
+            gas_estimate += 20000
+            if (!this.blockNumbers.length || gas_estimate > 7000000) {
+                let cost = await p["getCost(uint256[])"](blockNumbers)
+                console.log(
+                    info.address,
+                    ownerNr.toString(),
+                    this.url,
+                    urlNr.toString(),
+                    this.description,
+                    descriptionNr.toString(),
+                    blockNumbers,
+                    compressed,
+                    pixelsNr,
+                    referrer,
+                    referrerNr.toString(),
+                    cost,
+                    gas_estimate,
+                    base_gas_estimate
+                )
+                await p.setBlocks(
+                    info.address,
+                    ownerNr,
+                    this.url,
+                    urlNr,
+                    this.description,
+                    descriptionNr,
+                    blockNumbers,
+                    compressed,
+                    pixelsNr,
+                    referrer,
+                    referrerNr, 
+                    { value: cost }
+                )
+                gas_estimate = base_gas_estimate
+                blockNumbers = []
+                pixels = []
+                compressed = []
+                pixelsNr = []
+
+                await data.updateDatas(pixel, data.datas.length + compressed.length)
+            }
         }
-        /*for (let i = 0; i <= Math.floor((this.blockNumbers.length - 1) / 25); i++) {
-            let blockNumbers = this.blockNumbers.slice(i * 25, (i + 1) * 25)
-            let pixels = this.pixels.slice(i * 25, (i + 1) * 25)
-            let cost = await p["getCost(uint256[])"](blockNumbers)
-            p["setBlocks(uint256[],string,string,bytes[],address)"](blockNumbers, this.url, this.description, pixels, referrer || ethers.constants.AddressZero, { value: cost })
-        }*/
     }
 }

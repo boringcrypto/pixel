@@ -81,39 +81,49 @@ contract MLM is AddressList {
 
     function _mlm(address rep, uint32 upline_, uint32 earnings1, uint32 earnings2, uint32 earnings3) internal returns (address lvl1, address lvl2, address lvl3) {
         RepInfo memory info = mlm[rep];
-        if (info.upline == 0 && upline_ != 0) {
-            lvl1 = addresses[upline_];
-            require(rep != lvl1, "MLM: Can't refer yourself");
+        bool added;
+        if (info.upline == 0) {
+            if (upline_ != 0) {
+                lvl1 = addresses[upline_];
+                require(rep != lvl1, "MLM: Can't refer yourself");
 
-            if (lvl1 != address(0)) {
-                info.upline = upline_;
-                mlm[rep] = info;
-                emit MLMAddRep(rep, lvl1);
+                if (lvl1 != address(0)) {
+                    info.upline = upline_;
+                    mlm[rep] = info;
+                    emit MLMAddRep(rep, lvl1);
+                    added = true;
+                }
             }
         } else {
             lvl1 = addresses[info.upline];
         }
 
-        if (info.upline != 0) {
+        if (lvl1 != address(0)) {
             RepInfo memory info1 = mlm[lvl1];
-            info1.tier1++;
-            info1.tier2 += info.tier1;
-            info1.tier2 += info.tier3;
+            if (added) {
+                info1.tier1++;
+                info1.tier2 += info.tier1;
+                info1.tier3 += info.tier2;
+            }
             info1.earnings1 += earnings1;
             emit MLMEarn(lvl1, earnings1, 1);
             mlm[lvl1] = info1;
             if (info1.upline != 0) {
                 lvl2 = addresses[info1.upline];
                 RepInfo memory info2 = mlm[lvl2];
-                info2.tier2++;
-                info2.tier3 += info1.tier2;
+                if (added) {
+                    info2.tier2++;
+                    info2.tier3 += info.tier1;
+                }
                 info2.earnings2 += earnings2;
                 emit MLMEarn(lvl2, earnings2, 2);
                 mlm[lvl2] = info2;
                 if (info2.upline != 0) {
                     lvl3 = addresses[info2.upline];
                     RepInfo memory info3 = mlm[lvl3];
-                    info3.tier3++;
+                    if (added) {
+                        info3.tier3++;
+                    }
                     info3.earnings3 += earnings3;
                     emit MLMEarn(lvl3, earnings3, 3);
                     mlm[lvl3] = info3;
@@ -196,7 +206,6 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
         // Set data[0] to blank
         text.push("");
         data.push(bytes(""));
-        updates.push(10000); // Update of 10000 means: update all blocks from 0 to 9999
     }
 
     modifier onlyCreationPhase() {
@@ -331,6 +340,7 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
     function finishInit() public onlyOwner {
         START_TIMESTAMP = block.timestamp + 2 hours;
         LOCK_TIMESTAMP = block.timestamp + 14 days + 2 hours;
+        updates.push(10000); // Update of 10000 means: update all blocks from 0 to 9999
     }
 
     function _setBlock(
@@ -416,9 +426,9 @@ contract PixelV2 is ERC20WithSupply, BoringOwnable, MLM, ReentrancyGuard {
 
         // Mint a PIXEL token for each pixel bought
         uint256 blocks = blockNumbers.length;
-        _mint(msg.sender, blocks.mul(1e20));
-        
         (address lvl1, address lvl2, address lvl3) = _mlm(msg.sender, referrerNr, blocks.mul(20).to32(), blocks.mul(10).to32(), blocks.mul(5).to32());
+
+        _mint(msg.sender, blocks.mul(100e18));
         if (lvl1 != address(0)) { _mint(lvl1, blocks.mul(20e18)); }
         if (lvl2 != address(0)) { _mint(lvl2, blocks.mul(10e18)); }
         if (lvl3 != address(0)) { _mint(lvl3, blocks.mul(5e18)); }

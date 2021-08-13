@@ -1,6 +1,6 @@
 import { BigNumber, ethers } from "ethers"
 import { PixelMigratorFactory, PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
-import { constants } from "../constants/development"
+import { constants } from "../constants/live"
 import * as Keys from "../../keys.json"
 import Snapshot from "../snapshot"
 import { compressPixels } from "./Order"
@@ -224,8 +224,10 @@ export class Deployer {
 
     async deploy() {
         let provider = new ethers.providers.JsonRpcProvider(constants.network.rpcUrls[0])
-        let signer = ethers.Wallet.fromMnemonic(Keys.deployer).connect(provider)
+        let signer = new ethers.Wallet(Keys.deployerKey).connect(provider)
+        console.log("Signer", signer.address, constants.pixel)
         let pixel = PixelV2Factory.connect(constants.pixel, signer)
+        console.log(await pixel.owner())
         let mlm = this.getMLM()
         let gas = BigNumber.from("0")
         let tx
@@ -260,13 +262,12 @@ export class Deployer {
             mints.amount.push(totalSupply.sub(totalMigrated))
 
             console.log("Adding", mints.to.length, "balance migrations")
-            tx = await (await pixel.mint(mints.to, mints.amount)).wait()
-            console.log(tx.gasUsed.toString())
-            gas = gas.add(tx.gasUsed)
+            /*tx = await (await pixel.mint(mints.to, mints.amount, { gasPrice: 25111111111 })).wait()
+            console.log(tx.gasUsed.toString(), tx.transactionHash)
+            gas = gas.add(tx.gasUsed)*/
         }
-
         let currentAddresses = await pixel.getAddresses()
-        let allAddresses = Snapshot.blocks.map(b => b.owner).concat(mlm.upline)
+        /*let allAddresses = Snapshot.blocks.map(b => b.owner).concat(mlm.upline)
         let addresses = [...new Set(allAddresses.filter(a => currentAddresses.indexOf(a) < 0))]
         if (addresses.length) {
             console.log("Adding", addresses.length, "addresses")
@@ -274,11 +275,11 @@ export class Deployer {
             console.log(tx.gasUsed.toString())
             gas = gas.add(tx.gasUsed)
         }
-        currentAddresses = await pixel.getAddresses()
+        currentAddresses = await pixel.getAddresses()*/
 
         if ((await pixel.mlm("0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E")).earnings1 == 0) {
             console.log("Adding MLM data")
-            tx = await (await pixel.initMLM(
+            /*tx = await (await pixel.initMLM(
                 mlm.rep,
                 mlm.upline.map(a => currentAddresses.indexOf(a)),
                 mlm.earn1,
@@ -286,17 +287,18 @@ export class Deployer {
                 mlm.earn3,
                 mlm.tier1,
                 mlm.tier2,
-                mlm.tier3
+                mlm.tier3,
+                { maxFeePerGas: 24000000000, maxPriorityFeePerGas: 1111111111, gasLimit: 10000000}
             )).wait()
             console.log(tx.gasUsed.toString())
-            gas = gas.add(tx.gasUsed)
+            gas = gas.add(tx.gasUsed)*/
         }
 
         let currentText = await pixel.getText()
-        let url = [...new Set(Snapshot.blocks.map(b => b.url).filter(t => currentText.indexOf(t) < 0))]
+        /*let url = [...new Set(Snapshot.blocks.map(b => b.url).filter(t => currentText.indexOf(t) < 0))]
         if (url.length) {
             console.log("Adding", url.length, "urls")
-            tx = await (await pixel.addText(url)).wait()
+            tx = await (await pixel.addText(url, { maxFeePerGas: 24000000000, maxPriorityFeePerGas: 1111111111, gasLimit: 10000000})).wait()
             console.log(tx.gasUsed.toString())
             gas = gas.add(tx.gasUsed)
         }
@@ -305,23 +307,23 @@ export class Deployer {
         let description = [...new Set(Snapshot.blocks.map(b => b.description).filter(t => currentText.indexOf(t) < 0))]
         if (description.length) {
             console.log("Adding", description.length, "descriptions")
-            tx = await (await pixel.addText(description)).wait()
+            tx = await (await pixel.addText(description, { maxFeePerGas: 24000000000, maxPriorityFeePerGas: 1111111111, gasLimit: 10000000})).wait()
             console.log(tx.gasUsed.toString())
             gas = gas.add(tx.gasUsed)
         }
-        currentText = await pixel.getText()
+        currentText = await pixel.getText()*/
 
         let dataCount = (await pixel.dataCount()).toNumber()
         let start = 0
         let currentData: string[] = []
-        while (start < dataCount) {
+        /*while (start < dataCount) {
             let end = start + 200 < dataCount ? start + 200 : dataCount
             console.log("Getting data from", start, "to", end)
             currentData = currentData.concat(await pixel.getDataRange(start, end))
             start += 200
         }
         console.log("Existing data", currentData.length, dataCount)
-        
+        */
         let ctx = (document.createElement("CANVAS") as HTMLCanvasElement).getContext("2d")
         let pixelPromises: Promise<string>[] = []
         console.log("Building pixels...")
@@ -333,15 +335,17 @@ export class Deployer {
         console.log("Promises", pixelPromises.length)
         let allPixels = (await Promise.all(pixelPromises))
 
-        console.log("Pixels", allPixels.length)
+        /*console.log("Pixels", allPixels.length)
         let pixels = [...new Set(allPixels)].filter(d => currentData.indexOf(d) < 0)
         console.log("Adding", pixels.length, "pixels")
         while (pixels.length) {
             let batch = pixels.splice(0, 35)
-            tx = await (await pixel.addData(batch)).wait()
-            console.log("Left", pixels.length, "gas", tx.gasUsed.toString())
-            gas = gas.add(tx.gasUsed)
-        }
+            tx = await pixel.addData(batch, { maxFeePerGas: 28000000000, maxPriorityFeePerGas: 1111111111, gasLimit: 12000000})
+            console.log(tx)
+            let receipt = await tx.wait()
+            console.log("Left", pixels.length, "gas", receipt.gasUsed.toString(), receipt)
+            gas = gas.add(receipt.gasUsed)
+        }*/
 
         dataCount = (await pixel.dataCount()).toNumber()
         start = 0
@@ -369,22 +373,29 @@ export class Deployer {
             pixelss[i] = currentData.indexOf(allPixels[i])
             lastPrices[i] = BigNumber.from(b.lastPrice).mul("500000000000000")
         }
+        let startAt = 4800
+        blockNumbers.splice(0, startAt)
+        lastPrices.splice(0, startAt)
+        owners.splice(0, startAt)
+        urls.splice(0, startAt)
+        descriptions.splice(0, startAt)
+        pixelss.splice(0, startAt)
+        console.log("Start with", blockNumbers.length)
         while(blockNumbers.length) {
-            let isBlank = (await pixel.getRawBlocks(blockNumbers.slice(0, 300))).map(b => b.owner == 0)
-            if (isBlank.filter(b => b).length > 0) {
-                tx = await (await pixel.initBlocks(
-                    blockNumbers.splice(0, 300).filter((d, i) => isBlank[i]),
-                    lastPrices.splice(0, 300).filter((d, i) => isBlank[i]),
-                    owners.splice(0, 300).filter((d, i) => isBlank[i]),
-                    urls.splice(0, 300).filter((d, i) => isBlank[i]),
-                    descriptions.splice(0, 300).filter((d, i) => isBlank[i]),
-                    pixelss.splice(0, 300).filter((d, i) => isBlank[i])
-                )).wait()
-                console.log("Left", blockNumbers.length, "gas", tx.gasUsed.toString())
-                gas = gas.add(tx.gasUsed)
-            }
+            console.log("Setting blocks", 10000-blockNumbers.length)
+            tx = await (await pixel.initBlocks(
+                blockNumbers.splice(0, 300),
+                lastPrices.splice(0, 300),
+                owners.splice(0, 300),
+                urls.splice(0, 300),
+                descriptions.splice(0, 300),
+                pixelss.splice(0, 300), 
+                { maxFeePerGas: 33000000000, maxPriorityFeePerGas: 1111111111, gasLimit: 12000000}
+            )).wait()
+            console.log("Left", blockNumbers.length, "gas", tx.gasUsed.toString())
+            gas = gas.add(tx.gasUsed)
         }
-
+        return
         tx = await (await pixel.finishInit()).wait()
         gas = gas.add(tx.gasUsed)
 

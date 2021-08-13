@@ -6,6 +6,8 @@ module.exports = async (hre) => {
     const { deploy } = hre.deployments
     const accounts = await hre.getUnnamedAccounts()
     const signers = await hre.ethers.getSigners()
+    console.log(accounts)
+    console.log(signers.map(s => s.address))
 
     console.log("Deployer:", accounts[0])
     
@@ -13,7 +15,6 @@ module.exports = async (hre) => {
         from: accounts[0],
         args: [],
         log: true,
-        value: BigNumber.from("7000000000000000000000"),
         gas: BigNumber.from("20000000")
     })
 

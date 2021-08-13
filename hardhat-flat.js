@@ -1,4 +1,3 @@
-module.exports = require("@boringcrypto/hardhat-framework").config.hardhat(require("./settings").hardhat)
 const fs = require("fs")
 
 function getSortedFiles(dependenciesGraph) {

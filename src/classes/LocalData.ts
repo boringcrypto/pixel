@@ -124,6 +124,8 @@ export class LocalData {
             texts: this.texts,
             datas: this.datas,
             updateIndex: this.updateIndex,
+            startTimeStamp: this.startTimeStamp,
+            lockTimeStamp: this.lockTimeStamp,
             version: this.version
         }
         let compressed = await compress(fullData)
@@ -192,6 +194,10 @@ export class LocalData {
         // Unique blocks that have been updated
         updates = [...new Set(updates)]
 
+        if (!this.updateIndex) {
+            updates = [10000]
+        }
+
         if (updates.length) {
             if (updates[0] == 10000) {
                 console.log("Update ALL blocks")
@@ -202,7 +208,6 @@ export class LocalData {
                 console.log("Update blocks", updates.length, "left")
                 let blockNumbers = updates.splice(0, 100)
                 let blocks = await retry(() => pixel.getRawBlocks(blockNumbers))
-                console.log(blocks)
 
                 for (let i in blocks) {
                     let block = blocks[i]
@@ -237,6 +242,7 @@ export class LocalData {
         const textCount = pollInfo.text_.toNumber()
         const dataCount = pollInfo.data_.toNumber()
         const updateCount = pollInfo.updates_.toNumber()
+
         if (this.loading) { return }
         if (this.addresses.length < addressCount) {
             this.loading = true
@@ -250,7 +256,7 @@ export class LocalData {
             this.loading = true
             await this.updateDatas(pixel, dataCount)
         }
-        if (this.updateIndex < updateCount) {
+        if (this.updateIndex < updateCount || !updateCount) {
             this.loading = true
             await this.updateBlocks(pixel, updateCount, onBlocks)
         }

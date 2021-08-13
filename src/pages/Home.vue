@@ -37,7 +37,6 @@
                     </tbody>
                 </table>
                 <br>
-                {{ data.startTimeStamp }} - {{ data.lockTimeStamp }}
                 <Countdown :goal="data.startTimeStamp">
                     <template v-slot:before>
                         <strong>Creation Phase</strong><br>
@@ -110,11 +109,11 @@
                     Pixel cost: {{ order.cost.print(18, 0) }} ETH<br>
                     Gas costs (est): {{ order.gas.mul(order.gasPrice).print(18, 0)}} ETH ({{ order.gasPrice.print(9, 0) }} gwei)<br>
                     You will receive {{ (order.width * order.height - order.duplicateBlocks) * 100 }} PIXEL tokens
+                    <span v-if="order.duplicateBlocks"><br>{{ order.duplicateBlocks * 100 }} duplicate pixels found, ignored</span>
                     <span v-if="order.width * order.height - order.duplicateBlocks > 25">
                         <br><br>
-                        They area is too large for a single transaction. <strong>{{ Math.ceil((order.width * order.height - order.duplicateBlocks) / 25) }} transactions will be queued</strong>. If any of the transactions fail, you can simply redo it with the same image and the same area. Any blocks of pixels already succesfully bought will be ignored (not bought again).
+                        You selected a large area and this purchase might be split into multiple transactions. If any of the transactions fail, you can simply redo it with the same image and the same area. Any blocks of pixels already succesfully bought will be ignored (not bought again).
                     </span>
-                    <span v-if="order.duplicateBlocks"><br>{{ order.duplicateBlocks * 100 }} duplicate pixels found, ignored</span>
                 </p>
                 <div class="field-row-stacked" style="width: 100%">
                     <label for="url">URL</label>
@@ -176,7 +175,6 @@
     <br>
     <Leaderboard :data="data" />
     <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :pixel="pixel" :blocks="data.blocks" :updateIndex="data.updateIndex" :version="data.version" />
-    <Clippy @loaded="clippyLoaded"></Clippy>
 </template>
 
 <script lang="ts">
@@ -188,7 +186,7 @@ import { ProviderInfo } from "../classes/ProviderInfo"
 import { PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
 import { nextTick } from "process"
 import { ethers } from "ethers"
-import { constants } from "../constants/development"
+import { constants } from "../constants/live"
 import { sleep, playSound, randomItem } from "../classes/Utils"
 import { MaticProvider } from "../classes/MaticProvider"
 import { PixelsToImageData } from "../classes/Blocks"
@@ -202,12 +200,10 @@ import BlocksStats from "../components/BlocksStats.vue"
 import DropTarget from "../components/DropTarget.vue"
 import AmbassadorProgram from "../components/AmbassadorProgram.vue"
 import Leaderboard from "../components/Leaderboard.vue"
-import Clippy, { ClippyAgent } from "../components/Clippy.vue"
 import Admin from "../components/Admin.vue"
 import SelectionArea from "../components/SelectionArea.vue"
 import Tooltip from "../components/Tooltip.vue"
 import Loading from "../components/Loading.vue"
-import { Deployer } from "../classes/Deployer"
 
 enum BuyState {
     None,
@@ -233,7 +229,6 @@ export default defineComponent({
         DropTarget,
         AmbassadorProgram,
         Leaderboard,
-        Clippy,
         Admin,
         SelectionArea,
         Tooltip,
@@ -260,8 +255,6 @@ export default defineComponent({
 
             buyState: BuyState.None,
             order: new Order(),
-
-            clippy: null as ClippyAgent | null,
         }
     },
     async created() {
@@ -275,14 +268,14 @@ export default defineComponent({
         // Remove this?
         this.data.startTimeStamp = (await this.pixel.START_TIMESTAMP()).toNumber()
         if (!this.data.startTimeStamp) {
-            await new Deployer().deploy()
+            //await new Deployer().deploy()
         }
     },
     computed: {
         chainName() { return constants.network.chainName },
         contractAddress() { return constants.pixel },
         contractURL() { return constants.network.blockExplorerUrls[0] + 'address/' + constants.pixel + "#code" },
-        wrongNetwork(): boolean { return this.info.chainId != constants.chainId },
+        wrongNetwork(): boolean { console.log(this.info.chainId, constants.chainId); return this.info.chainId != constants.chainId },
         referrerClean(): string { return this.referrer?.toLowerCase() != this.info.address.toLowerCase() ? this.referrer || ethers.constants.AddressZero : ethers.constants.AddressZero },
     },
     watch: {
@@ -325,21 +318,19 @@ export default defineComponent({
                 }
             }
         },
-        clippyLoaded(agent: ClippyAgent) {
-            this.clippy = agent
-            window.setTimeout(() => {
-                window.setTimeout(() => {
-                    this.clippy!.show()
-                    this.clippy!.speak("Welcome to Pixel Inc!")
-                }, 2500)
-            }, 1000)
-        },
         async switchToNetwork() {
             await window.ethereum.request({method: 'wallet_addEthereumChain', params: [constants.network]})
         },
+        drawBlocks(blocks: number[]) {
+            let ctx = this.canvas?.getContext("2d")
+            blocks.forEach(blockNumber => {
+                let block = this.data.blocks[blockNumber]
+                ctx!.putImageData(PixelsToImageData(ctx!, this.data.datas[block.pixels]), (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
+            })
+        },
         async newBlock() {
             let ctx = this.canvas?.getContext("2d")
-            if (ctx && this.pixel && this.data.startTimeStamp) {
+            if (ctx && this.pixel){// && this.data.startTimeStamp) {
                 console.log("Polling for new data")
 
                 if (!this.data.lockTimeStamp) {
@@ -347,23 +338,15 @@ export default defineComponent({
                     this.data.lockTimeStamp = (await this.pixel.LOCK_TIMESTAMP()).toNumber()
                 }
 
-                await this.data.update(this.pixel, this.info.address, (blocks) => {
-                    blocks.forEach(blockNumber => {
-                        let block = this.data.blocks[blockNumber]
-                        ctx!.putImageData(PixelsToImageData(ctx!, this.data.datas[block.pixels]), (blockNumber % 100) * 10, Math.floor(blockNumber / 100) * 10)
-                    })
-                })
+                await this.data.update(this.pixel, this.info.address, this.drawBlocks)
             }
         },
         async buy() {
             this.image = null
             this.buyState = BuyState.None
             if (this.pixel && window.provider) {
-                this.order.buy(this.pixel, window.provider, this.data, this.info, this.referrerClean)
+                this.order.buy(this.pixel, window.provider, this.data, this.info, this.referrerClean, this.drawBlocks)
             }
-        },
-        agentDo(action: string) {
-            (this.$refs.clippy as typeof Clippy).play(action)
         },
         click(event: Event) {
             if (event.target === this.canvas) {
