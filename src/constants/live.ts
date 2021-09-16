@@ -14,6 +14,7 @@ let constants: Constants = {
         rpcUrls: [],
         blockExplorerUrls: ['https://etherscan.io/'],
     },
-    pixel: "0x1590ABe3612Be1CB3ab5B0f28874D521576e97Dc"
+    pixel: "0x1590ABe3612Be1CB3ab5B0f28874D521576e97Dc",
+    canvas: ""
 }
 export { constants }

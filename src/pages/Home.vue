@@ -4,11 +4,6 @@
             <td style="text-align: left; vertical-align: top">
                 <PixelLogo />
             </td>
-            <td style="vertical-align: bottom">
-                <button v-if="wrongNetwork" @click="switchToNetwork" class="upload-button">Switch to {{ chainName }}</button>
-                <button v-if="!wrongNetwork && !info.address" @click="info.connect" class="upload-button">Connect Metamask</button>
-                <button v-if="!wrongNetwork && info.address" @click="buyState = BuyState.SelectImage" class="upload-button">Upload your own pixels</button>
-            </td>
             <td style="text-align: right">
                 <span v-if="info.chainId == 0">
                     Network not connected
@@ -27,31 +22,19 @@
                 <table style="margin-left: auto;">
                     <tbody>
                         <tr>
-                            <td style="border: 3px ridge; padding: 4px;">Total PIXELs</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ data.supply.print(18, 0) }}</td>
+                            <td style="border: 3px ridge; padding: 4px;">PIXEL pool</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ pool.print(18, 0) }} ETH</td>
                         </tr>
                         <tr v-if="info.address">
-                            <td style="border: 3px ridge; padding: 4px;">You own</td>
-                            <td style="border: 3px ridge; padding: 4px;">{{ data.userInfo.balance.print(18, 0) }}</td>
+                            <td style="border: 3px ridge; padding: 4px;">Your share</td>
+                            <td style="border: 3px ridge; padding: 4px;">{{ share.print(18, 0) }} ETH</td>
                         </tr>
                     </tbody>
                 </table>
-                <br>
-                <Countdown :goal="data.startTimeStamp">
-                    <template v-slot:before>
-                        <strong>Creation Phase</strong><br>
-                        starting in
-                    </template>
-                    <Countdown :goal="data.lockTimeStamp">
-                        <template v-slot:before>
-                            <strong>Creation Phase</strong><br>
-                            <BlocksStats :blocks="data.blocks" /><br>
-                            ends in
-                        </template>
-                        <strong>Canvas NFT Phase</strong><br>
-                        The canvas is now locked.
-                    </Countdown>
-                </Countdown>
+                <span v-if="!share.isZero()">
+                    <button @click="redeem">Redeem</button><br>
+                    Redeeming will burn your {{ data.userInfo.balance.print(18, 0) }} PIXEL tokens permanently
+                </span>
             </td>
         </tr>
     </table>
@@ -132,33 +115,29 @@
 
     <table style="width: 1004px; margin: auto; border-spacing: 0;">
         <tr>
+            <td colspan="2">
+                Price: {{ price.print(18, 0) }} ETH
+                <span v-if="info.chainId == 0">
+                    Network not connected
+                </span>
+                <span v-else-if="wrongNetwork">
+                    Wrong network <button @click="switchToNetwork">Switch to {{ chainName }}</button>
+                </span>
+                <span v-else-if="!info.address">
+                    <button @click="info.connect">Connect Metamask</button>
+                </span>
+                <span v-else>
+                    <button @click="buyCanvas">Buy</button>
+                </span>
+            </td>
+        </tr>
+        <tr>
             <td style="vertical-align: top; padding-top: 20px">
-                <AmbassadorProgram :info="info" :data="data" />
                 <div style="text-align: left; vertical-align: top; padding-top: 10px;">
                     <SocialButtons></SocialButtons>
                 </div>
             </td>
             <td style="vertical-align: top; padding-top: 20px">
-                <div style="margin-left: auto; width: 480px; background-color: #ccc; color: black; border: 1px solid rgb(169, 216,235);">
-                    <h4 style="color: rgb(29, 74, 129); margin-block-start: 0.5em; margin-block-end: 0.5em">Pixel Smart Contract</h4>
-                    PIXEL address is <a :href="contractURL" target="_blank">{{ contractAddress }}</a><br>
-                    CAUTION: Contracts are NOT audited.<br>
-                    All data is stored on-chain. Website is <a :href="'https://pixelinc.eth.link/?ref=' + referrer">hosted on IPFS</a>.
-                    <br>
-                    <br>
-
-                    <div style="display: flex; width: 100%">
-                        <div style="flex-grow: 1">
-                            Best viewed with:<br>
-                            <a href="https://www.youtube.com/watch?v=eTVzkftwYgM" target="_blank"><img src="../assets/catsheepnow.gif" height="60"></a>
-                        </div>
-                        <div style="flex-grow: 1">
-                            You are visitor:<br>
-                            <img src="https://www.webfreecounter.com/hit.php?id=grofcnc&nd=6&style=11" border="0" alt="visitor counter">
-                        </div>
-                    </div>
-                    <br>
-                </div>
                 <div style="padding-top: 10px">
                     <img style="float: right" src="../assets/tom.jpg" height="80">
                     <p style="text-align: right; padding-right: 100px">
@@ -173,7 +152,6 @@
         </tr>
     </table>
     <br>
-    <Leaderboard :data="data" />
     <Admin v-if="info.address.toLowerCase() == '0x9e6e344f94305d36eA59912b0911fE2c9149Ed3E'.toLowerCase()" :info="info" :data="data" :updateIndex="data.updateIndex" :version="data.version" />
 </template>
 
@@ -183,10 +161,10 @@
 
 import {defineComponent, PropType } from "@vue/runtime-core"
 import { ProviderInfo } from "../classes/ProviderInfo"
-import { PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
+import { CanvasFactory, PixelV2, PixelV2Factory } from "../../types/ethers-contracts"
 import { nextTick } from "process"
-import { ethers } from "ethers"
-import { constants } from "../constants/live"
+import { BigNumber, ethers } from "ethers"
+import { constants } from "../constants/development"
 import { playSound, randomItem } from "../classes/Utils"
 import { PixelsToImageData } from "../classes/Blocks"
 import { LocalData } from "../classes/LocalData"
@@ -248,6 +226,10 @@ export default defineComponent({
 
             buyState: BuyState.None,
             order: new Order(),
+
+            price: BigNumber.from("0"),
+            pool: BigNumber.from("0"),
+            share: BigNumber.from("0")
         }
     },
     async created() {
@@ -266,9 +248,6 @@ export default defineComponent({
         },
         'info.block': function() {
             this.newBlock()
-        },
-        'info.chainId': function() {
-            console.log(this.info.chainId)
         }
     },
     methods: {
@@ -318,6 +297,14 @@ export default defineComponent({
 
                 let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
                 await this.data.update(pixel, this.info.address, this.drawBlocks)
+
+                console.log("canvas", constants.canvas)
+                let canvas = CanvasFactory.connect(constants.canvas, window.provider)
+                let info = await canvas.poll(this.info.address)
+                console.log(info)
+                this.price = info.price_
+                this.pool = info.pool
+                this.share = info.share
             }
         },
         async buy() {
@@ -326,6 +313,26 @@ export default defineComponent({
             if (window.provider) {
                 let pixel = PixelV2Factory.connect(constants.pixel, window.provider)
                 this.order.buy(pixel, window.provider, this.data, this.info, this.referrerClean, this.drawBlocks)
+            }
+        },
+        async buyCanvas() {
+            if (window.provider) {
+                let canvas = CanvasFactory.connect(constants.canvas, window.provider.getSigner(this.info.address))
+                await canvas.buy({
+                    value: this.price
+                })
+            }
+        },
+        async redeem() {
+            if (window.provider) {
+                let pixel = PixelV2Factory.connect(constants.pixel, window.provider.getSigner(this.info.address))
+                let canvas = CanvasFactory.connect(constants.canvas, window.provider.getSigner(this.info.address))
+                let allowance = await pixel.allowance(this.info.address, canvas.address)
+                let amount = this.data.userInfo.balance
+                if (allowance.lt(amount)) {
+                    await pixel.approve(canvas.address, amount)
+                }
+                await canvas.redeem(amount)
             }
         },
         click(event: Event) {

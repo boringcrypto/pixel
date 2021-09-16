@@ -10,14 +10,15 @@
         "format": "prettier --write contracts/**/*.sol *.js *.ts *.json test/**/*.js src/**/*.ts src/**/*.js src/**/*.json **/*.vue",
         "pretty-quick": "pretty-quick",
         "coverage": "hardhat coverage",
-        "flat": "hardhat flat .\\contracts\\Pixel.sol --output .\\contracts\\PixelFlat.sol",
-        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/**/?(PixelV2|PixelMigrator|MiniChefV2).json\"",
+        "flat": "hardhat flat .\\contracts\\Canvas.sol --output .\\contracts\\CanvasFlat.sol",
+        "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/**/?(Canvas|PixelV2|PixelMigrator|MiniChefV2).json\"",
         "build": "vue-tsc --noEmit && vite build",
         "dev": "hardhat compile & yarn ts & concurrently \"hardhat node\" \"vite\""
     },
     "dependencies": {
         "bootstrap": "^5.0.0-beta3",
         "ethers": "^5.1.4",
+        "node-canvas": "^2.7.0",
         "vue": "^3.0.5",
         "vue-router": "4",
         "vue-tsc": "^0.0.24"
