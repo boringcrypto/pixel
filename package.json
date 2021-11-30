@@ -13,6 +13,7 @@
         "flat": "hardhat flat .\\contracts\\Canvas.sol --output .\\contracts\\CanvasFlat.sol",
         "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/**/?(Canvas|PixelV2|PixelMigrator|MiniChefV2).json\"",
         "build": "vue-tsc --noEmit && vite build",
+        "certora": "yarn flat & certoraRun contracts\\CanvasFlat.sol:Canvas --verify Canvas:test\\certora\\Canvas.spec --jar C:\\\\certora\\\\emv2.jar --optimistic_loop",
         "dev": "hardhat compile & yarn ts & concurrently \"hardhat node\" \"vite\""
     },
     "dependencies": {
@@ -25,7 +26,7 @@
     },
     "devDependencies": {
         "98.css": "^0.1.17",
-        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#77f3752c4bcf47cb7f8e8140ac8cd626b1151ad3",
+        "@boringcrypto/boring-solidity": "boringcrypto/BoringSolidity#f05de5f250056730c3fd3e5a5d1e572c2d113023",
         "@boringcrypto/hardhat-framework": "boringcrypto/hardhat-framework#8bc714f70dc1075cfcaa0fa0c6d4e4b9624cf14c",
         "@nomiclabs/hardhat-ethers": "^2.0.2",
         "@types/express": "^4.17.13",

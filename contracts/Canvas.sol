@@ -16,102 +16,12 @@ pragma experimental ABIEncoderV2;
 
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringMath.sol";
 import "@boringcrypto/boring-solidity/contracts/libraries/BoringERC20.sol";
-import "@boringcrypto/boring-solidity/contracts/BoringOwnable.sol";
 import "@boringcrypto/boring-solidity/contracts/ERC20.sol";
+import "@boringcrypto/boring-solidity/contracts/BoringSingleNFT.sol";
 
 // solhint-disable avoid-low-level-calls
 
-interface ERC721TokenReceiver {
-    /// @notice Handle the receipt of an NFT
-    /// @dev The ERC721 smart contract calls this function on the recipient
-    ///  after a `transfer`. This function MAY throw to revert and reject the
-    ///  transfer. Return of other than the magic value MUST result in the
-    ///  transaction being reverted.
-    ///  Note: the contract address is always the message sender.
-    /// @param _operator The address which called `safeTransferFrom` function
-    /// @param _from The address which previously owned the token
-    /// @param _tokenId The NFT identifier which is being transferred
-    /// @param _data Additional data with no specified format
-    /// @return `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
-    ///  unless throwing
-    function onERC721Received(
-        address _operator,
-        address _from,
-        uint256 _tokenId,
-        bytes calldata _data
-    ) external returns (bytes4);
-}
-
-interface Pixel is IERC20 {
-    function burn(uint256 amount) external;
-}
-
-contract Canvas {
-    using BoringMath for uint256;
-    using BoringERC20 for Pixel;
-
-    event Transfer(address indexed _from, address indexed _to, uint256 indexed _tokenId);
-    event Approval(address indexed _owner, address indexed _approved, uint256 indexed _tokenId);
-    event ApprovalForAll(address indexed _owner, address indexed _operator, bool _approved);
-    event Buy(address hodler, address buyer, uint256 price, uint256 hodler_share);
-
-    string public constant name = "The Canvas of Pixel Inc";
-    string public constant symbol = "CANVAS";
-
-    address public hodler;
-    address public allowed;
-
-    uint256 public price;
-    Pixel public immutable pixel;
-    string public info;
-
-    mapping(address => mapping(address => bool)) public operators;
-
-    constructor(Pixel _pixel) public {
-        pixel = _pixel;
-        price = _pixel.totalSupply() / 200000;
-        hodler = address(_pixel);
-    }
-
-    function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
-        return
-            interfaceID == this.supportsInterface.selector || // EIP-165
-            interfaceID == 0x80ac58cd; // EIP-721
-    }
-
-    function tokenURI(uint256 _tokenId) public pure returns (string memory) {
-        require(_tokenId == 0, "Invalid token ID");
-
-        // {"name": "Canvas", "description": "The final canvas created by the Pixel Inc project, 1000x1000 pixels painted by many different collaborators. Be aware, the canvas is always for sale through the website, don't list this on marketplaces! All the image and link data is stored fully on-chain and can be retrieved by querying the contract. The javascript code for this is included in this contract.", "image": "ipfs://bafybeidhigbhrccj27qrgnfswebfcciiywa46y2pisbtlad6vi2h5iu3u4/"}
-        return string(abi.encodePacked('data:application/json;base64,eyJuYW1lIjogIkNhbnZhcyIsICJkZXNjcmlwdGlvbiI6ICJUaGUgZmluYWwgY2FudmFzIGNyZWF0ZWQgYnkgdGhlIFBpeGVsIEluYyBwcm9qZWN0LCAxMDAweDEwMDAgcGl4ZWxzIHBhaW50ZWQgYnkgbWFueSBkaWZmZXJlbnQgY29sbGFib3JhdG9ycy4gQmUgYXdhcmUsIHRoZSBjYW52YXMgaXMgYWx3YXlzIGZvciBzYWxlIHRocm91Z2ggdGhlIHdlYnNpdGUsIGRvbid0IGxpc3QgdGhpcyBvbiBtYXJrZXRwbGFjZXMhIEFsbCB0aGUgaW1hZ2UgYW5kIGxpbmsgZGF0YSBpcyBzdG9yZWQgZnVsbHkgb24tY2hhaW4gYW5kIGNhbiBiZSByZXRyaWV2ZWQgYnkgcXVlcnlpbmcgdGhlIGNvbnRyYWN0LiBUaGUgamF2YXNjcmlwdCBjb2RlIGZvciB0aGlzIGlzIGluY2x1ZGVkIGluIHRoaXMgY29udHJhY3QuIiwgImltYWdlIjogImlwZnM6Ly9iYWZ5YmVpZGhpZ2JocmNjajI3cXJnbmZzd2ViZmNjaWl5d2E0NnkycGlzYnRsYWQ2dmkyaDVpdTN1NC8ifQ'));
-    }
-
-    function balanceOf(address _owner) public view returns (uint256) {
-        require(_owner != address(0), "No zero address");
-        return _owner == hodler ? 1 : 0;
-    }
-
-    function ownerOf(uint256 _tokenId) public view returns (address) {
-        require(_tokenId == 0, "Invalid token ID");
-        require(hodler != address(0), "No owner");
-        return hodler;
-    }
-
-    function _transfer(
-        address from,
-        address to,
-        uint256 _tokenId
-    ) internal {
-        require(_tokenId == 0, "Invalid token ID");
-        require(from != to, "No self transfer");
-        require(from == hodler, "From not owner");
-        require(from == msg.sender || from == allowed || operators[hodler][from], "Transfer not allowed");
-        require(to != address(0), "No zero address");
-        hodler = to;
-        allowed = address(0);
-        emit Transfer(from, to, _tokenId);
-    }
-
+library Address {
     function isContract(address account) internal view returns (bool) {
         uint256 size;
         assembly {
@@ -119,62 +29,34 @@ contract Canvas {
         }
         return size > 0;
     }
+}
 
-    function safeTransferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId
-    ) public payable {
-        safeTransferFrom(_from, _to, _tokenId, "");
+interface Pixel is IERC20 {
+    function burn(uint256 amount) external;
+}
+
+contract Canvas is BoringSingleNFT {
+    using BoringMath for uint256;
+    using BoringERC20 for Pixel;
+
+    event Buy(address hodler, address buyer, uint256 price, uint256 hodler_share);
+
+    string public constant name = "The Canvas of Pixel Inc";
+    string public constant symbol = "CANVAS";
+
+    uint256 public price;
+    Pixel public immutable pixel;
+    string public info;
+
+    constructor(Pixel _pixel) public {
+        pixel = _pixel;
+        price = _pixel.totalSupply() / 200000;
+        _transferBase(address(_pixel));
     }
 
-    function safeTransferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId,
-        bytes memory _data
-    ) public payable {
-        _transfer(_from, _to, _tokenId);
-        if (isContract(_to)) {
-            require(
-                ERC721TokenReceiver(_to).onERC721Received(msg.sender, _from, _tokenId, _data) ==
-                    bytes4(keccak256("onERC721Received(address,address,uint256,bytes)")),
-                "Wrong return value"
-            );
-        }
-    }
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _tokenId
-    ) public payable {
-        _transfer(_from, _to, _tokenId);
-    }
-
-    function approve(address _approved, uint256 _tokenId) public payable {
-        require(_tokenId == 0, "Invalid token ID");
-        require(msg.sender == hodler, "Not hodler");
-        allowed = _approved;
-        emit Approval(msg.sender, _approved, _tokenId);
-    }
-
-    function setApprovalForAll(address _operator, bool _approved) public {
-        operators[msg.sender][_operator] = _approved;
-        emit ApprovalForAll(msg.sender, _operator, _approved);
-    }
-
-    function getApproved(uint256 _tokenId) public view returns (address) {
-        require(_tokenId == 0, "Invalid token ID");
-        return allowed;
-    }
-
-    function isApprovedForAll(address _owner, address _operator) public view returns (bool) {
-        return operators[_owner][_operator];
-    }
-
-    function totalSupply() external pure returns (uint256) {
-        return 1;
+    function _tokenURI() internal override pure returns (string memory) {
+        // {"name": "Canvas", "description": "The final canvas created by the Pixel Inc project, 1000x1000 pixels painted by many different collaborators. Be aware, the canvas is always for sale through the website, don't list this on marketplaces! All the image and link data is stored fully on-chain and can be retrieved by querying the contract. The javascript code for this is included in this contract.", "image": "ipfs://bafybeidhigbhrccj27qrgnfswebfcciiywa46y2pisbtlad6vi2h5iu3u4/"}
+        return string(abi.encodePacked('data:application/json;base64,eyJuYW1lIjogIkNhbnZhcyIsICJkZXNjcmlwdGlvbiI6ICJUaGUgZmluYWwgY2FudmFzIGNyZWF0ZWQgYnkgdGhlIFBpeGVsIEluYyBwcm9qZWN0LCAxMDAweDEwMDAgcGl4ZWxzIHBhaW50ZWQgYnkgbWFueSBkaWZmZXJlbnQgY29sbGFib3JhdG9ycy4gQmUgYXdhcmUsIHRoZSBjYW52YXMgaXMgYWx3YXlzIGZvciBzYWxlIHRocm91Z2ggdGhlIHdlYnNpdGUsIGRvbid0IGxpc3QgdGhpcyBvbiBtYXJrZXRwbGFjZXMhIEFsbCB0aGUgaW1hZ2UgYW5kIGxpbmsgZGF0YSBpcyBzdG9yZWQgZnVsbHkgb24tY2hhaW4gYW5kIGNhbiBiZSByZXRyaWV2ZWQgYnkgcXVlcnlpbmcgdGhlIGNvbnRyYWN0LiBUaGUgamF2YXNjcmlwdCBjb2RlIGZvciB0aGlzIGlzIGluY2x1ZGVkIGluIHRoaXMgY29udHJhY3QuIiwgImltYWdlIjogImlwZnM6Ly9iYWZ5YmVpZGhpZ2JocmNjajI3cXJnbmZzd2ViZmNjaWl5d2E0NnkycGlzYnRsYWQ2dmkyaDVpdTN1NC8ifQ'));
     }
 
     function buy() external payable {
@@ -185,12 +67,10 @@ contract Canvas {
         bool success;
         (success, ) = hodler.call{value: hodler_share, gas: 20000}("");
 
-        emit Transfer(hodler, msg.sender, 0);
         emit Buy(hodler, msg.sender, price, hodler_share);
 
         price = price.mul(150) / 100; // Increase price by 50%
-        hodler = msg.sender;
-        allowed = address(0);
+        _transferBase(msg.sender);
     }
 
     function redeem(uint256 amount) external {
