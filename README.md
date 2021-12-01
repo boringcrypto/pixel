@@ -24,4 +24,4 @@ When the NFT sells, the proceeds go to the PIXEL holder pool.
 
 The NFT will however ALWAYS be for sale for 150% of the last paid price. Anyone can buy this NFT at any time for 150% of the last sale price. When a resale happens, the original sale price + 10% gets refunded to the last owner and the rest goes to the PIXEL holder pool.
 
-So as the NFT gets resold over and over, the funds in the PIXEL holder pool grow. PIXEL tokens can be burnt at anytime to redeem their share of the PIXEL holder pool proceeds. Since these PIXEL tokens are now burnt, this reduces the total upply of PIXEL tokens, so if the NFT sells again after this, remaining PIXEL token holders will receive more of this.
+So as the NFT gets resold over and over, the funds in the PIXEL holder pool grow. PIXEL tokens can be burnt at anytime to redeem their share of the PIXEL holder pool proceeds. Since these PIXEL tokens are now burnt, this reduces the total supply of PIXEL tokens, so if the NFT sells again after this, remaining PIXEL token holders will receive more of this.
