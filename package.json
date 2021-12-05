@@ -13,7 +13,7 @@
         "flat": "hardhat flat .\\contracts\\Canvas.sol --output .\\contracts\\CanvasFlat.sol",
         "ts": "yarn run typechain --target ethers-v5 \"artifacts/contracts/**/?(Canvas|PixelV2|PixelMigrator|MiniChefV2).json\"",
         "build": "vue-tsc --noEmit && vite build",
-        "certora": "yarn flat & certoraRun contracts\\CanvasFlat.sol:Canvas --verify Canvas:test\\certora\\Canvas.spec --jar C:\\\\certora\\\\emv2.jar --optimistic_loop",
+        "certora": "yarn flat & certoraRun contracts\\CanvasFlat.sol:Canvas --verify Canvas:test\\certora\\Canvas.spec --jar C:\\\\certora\\\\emv3.jar --optimistic_loop",
         "dev": "hardhat compile & yarn ts & concurrently \"hardhat node\" \"vite\""
     },
     "dependencies": {

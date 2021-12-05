@@ -35,7 +35,6 @@ subtask("flat:get-flattened-sources", "Returns all contracts and their dependenc
     .addOptionalParam("output", undefined, undefined, types.string)
     .setAction(async ({ files, output }, { run }) => {
         const dependencyGraph = await run("flat:get-dependency-graph", { files })
-        console.log(dependencyGraph)
 
         let flattened = ""
 
